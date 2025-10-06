@@ -1,9 +1,14 @@
+export const metadata = {
+  title: "Zoo Schedule",
+  description: "Calendario de eventos del Zoo Club",
+};
 
 import "./globals.css";
-import type { ReactNode } from "react";
 
-export const metadata = { title: "Zoo Schedule", description: "Calendario de eventos del Zoo Club" };
-
-export default function RootLayout({ children }:{ children: ReactNode }){
-  return (<html lang="de"><body>{children}</body></html>);
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="de" className="bg-neutral-950">
+      <body className="min-h-screen text-gray-100">{children}</body>
+    </html>
+  );
 }

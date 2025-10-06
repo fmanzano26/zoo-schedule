@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { ChevronLeft, ChevronRight, Plus, CalendarDays } from 'lucide-react';
-import { db, TYPE_COLORS, type EventType, type DBEvent } from '@/lib/db';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { ChevronLeft, ChevronRight, Plus, CalendarDays, Trash2 } from "lucide-react";
+import { db, TYPE_COLORS, type EventType, type DBEvent } from "@/lib/db";
 
 /* ================== Utilidades de fecha ================== */
 function isoDate(d: Date) {
   const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
-function monthLabel(d: Date, locale = 'de-CH') {
-  return d.toLocaleString(locale, { month: 'long', year: 'numeric' });
+function monthLabel(d: Date, locale = "de-CH") {
+  return d.toLocaleString(locale, { month: "long", year: "numeric" });
 }
 function addMonth(d: Date, delta: number) {
   return new Date(d.getFullYear(), d.getMonth() + delta, 1);
@@ -25,9 +25,8 @@ function monthMatrix(current: Date) {
 
   const cells: (Date | null)[] = [];
   for (let i = 0; i < startDow; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) {
+  for (let d = 1; d <= daysInMonth; d++)
     cells.push(new Date(current.getFullYear(), current.getMonth(), d));
-  }
   while (cells.length % 7 !== 0) cells.push(null);
   while (cells.length < 42) cells.push(null);
 
@@ -43,7 +42,15 @@ function formatDateCH(d: Date) {
 }
 
 /* ================== Modal básico ================== */
-function Modal({ open, onClose, children }: { open: boolean; onClose: () => void; children: ReactNode }) {
+function Modal({
+  open,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  children: ReactNode;
+}) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -92,8 +99,8 @@ function MiniDatePicker({
       const el = popRef.current;
       if (el && !el.contains(e.target as Node)) onClose();
     }
-    document.addEventListener('mousedown', onDown, true);
-    return () => document.removeEventListener('mousedown', onDown, true);
+    document.addEventListener("mousedown", onDown, true);
+    return () => document.removeEventListener("mousedown", onDown, true);
   }, [onClose]);
 
   return (
@@ -109,7 +116,7 @@ function MiniDatePicker({
       </div>
 
       <div className="mb-1 grid grid-cols-7 gap-1 text-center text-xs text-gray-400">
-        {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((d) => (
+        {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((d) => (
           <div key={d} className="py-1">
             {d}
           </div>
@@ -133,7 +140,7 @@ function MiniDatePicker({
                 key={`${ri}-${ci}`}
                 onClick={() => select(d!)}
                 className={`h-8 rounded-lg text-sm hover:bg-neutral-700/70 ${
-                  isSel ? 'bg-violet-600 text-white' : 'bg-neutral-800/70 text-gray-200'
+                  isSel ? "bg-violet-600 text-white" : "bg-neutral-800/70 text-gray-200"
                 }`}
               >
                 {d!.getDate()}
@@ -148,10 +155,10 @@ function MiniDatePicker({
 
 /* ================== Formulario de alta ================== */
 function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: () => void }) {
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState("");
   const [date, setDate] = useState(isoDate(defaultDate));
-  const [type, setType] = useState<EventType>('Reservierung');
-  const [desc, setDesc] = useState('');
+  const [type, setType] = useState<EventType>("Reservierung");
+  const [desc, setDesc] = useState("");
   const [openPicker, setOpenPicker] = useState(false);
   const pickerRef = useRef<HTMLDivElement | null>(null);
 
@@ -162,8 +169,8 @@ function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: ()
       const el = pickerRef.current;
       if (el && !el.contains(e.target as Node)) setOpenPicker(false);
     }
-    document.addEventListener('mousedown', onDown, true);
-    return () => document.removeEventListener('mousedown', onDown, true);
+    document.addEventListener("mousedown", onDown, true);
+    return () => document.removeEventListener("mousedown", onDown, true);
   }, [openPicker]);
 
   async function save(e: React.FormEvent) {
@@ -174,7 +181,7 @@ function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: ()
   }
 
   const inputCls =
-    'w-full rounded-xl bg-neutral-800/80 px-4 py-3 outline-none ring-violet-500/60 focus:ring-2 text-gray-100 placeholder-gray-400';
+    "w-full rounded-xl bg-neutral-800/80 px-4 py-3 outline-none ring-violet-500/60 focus:ring-2 text-gray-100 placeholder-gray-400";
 
   return (
     <form onSubmit={save} className="space-y-5 text-gray-100">
@@ -190,7 +197,7 @@ function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: ()
         <div>
           <label className="mb-1 block text-sm text-gray-300">Typ</label>
           <select className={inputCls} value={type} onChange={(e) => setType(e.target.value as EventType)}>
-            {(['Reservierung', 'Veranstaltung', 'Wartung', 'Reparatur', 'Sonstiges'] as EventType[]).map((opt) => (
+            {(["Reservierung", "Veranstaltung", "Wartung", "Reparatur", "Sonstiges"] as EventType[]).map((opt) => (
               <option key={opt} value={opt}>
                 {opt}
               </option>
@@ -204,7 +211,7 @@ function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: ()
             <div className="flex items-center gap-2">
               <input
                 readOnly
-                className={inputCls + ' font-medium'}
+                className={inputCls + " font-medium"}
                 value={formatDateCH(new Date(date))}
                 onClick={() => setOpenPicker((v) => !v)}
               />
@@ -216,7 +223,9 @@ function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: ()
                 <CalendarDays size={18} />
               </button>
             </div>
-            {openPicker && <MiniDatePicker value={new Date(date)} onChange={(d) => setDate(isoDate(d))} onClose={() => setOpenPicker(false)} />}
+            {openPicker && (
+              <MiniDatePicker value={new Date(date)} onChange={(d) => setDate(isoDate(d))} onClose={() => setOpenPicker(false)} />
+            )}
           </div>
         </div>
 
@@ -231,7 +240,7 @@ function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: ()
 
       <div>
         <label className="mb-1 block text-sm text-gray-300">Beschreibung</label>
-        <textarea className={inputCls + ' min-h-[120px]'} value={desc} onChange={(e) => setDesc(e.target.value)} />
+        <textarea className={inputCls + " min-h-[120px]"} value={desc} onChange={(e) => setDesc(e.target.value)} />
       </div>
 
       <div className="flex items-center justify-end gap-3">
@@ -283,7 +292,7 @@ export default function MonthCalendar() {
     const first = new Date(year, month, 1);
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const startDow = (first.getDay() + 6) % 7;
-    const colStartMap = ['col-start-1', 'col-start-2', 'col-start-3', 'col-start-4', 'col-start-5', 'col-start-6', 'col-start-7'];
+    const colStartMap = ["col-start-1", "col-start-2", "col-start-3", "col-start-4", "col-start-5", "col-start-6", "col-start-7"];
 
     const items: JSX.Element[] = [];
     for (let d = 1; d <= daysInMonth; d++) {
@@ -291,7 +300,7 @@ export default function MonthCalendar() {
       const dateStr = isoDate(dateObj);
       const dayEvents = mapped[dateStr] || [];
       const isFirst = d === 1;
-      const colStart = isFirst ? colStartMap[startDow] : '';
+      const colStart = isFirst ? colStartMap[startDow] : "";
 
       items.push(
         <div
@@ -356,7 +365,7 @@ export default function MonthCalendar() {
       {/* Cabeceras de días */}
       <div className="px-4 pb-2 pt-3">
         <div className="grid grid-cols-7 gap-2 px-2 text-center text-sm text-gray-300">
-          {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((d) => (
+          {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((d) => (
             <div key={d} className="py-2">
               {d}
             </div>
@@ -372,11 +381,11 @@ export default function MonthCalendar() {
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-gray-300">
           {(
             [
-              { key: 'Reservierung', label: 'Reservierung' },
-              { key: 'Veranstaltung', label: 'Veranstaltung' },
-              { key: 'Wartung', label: 'Wartung' },
-              { key: 'Reparatur', label: 'Reparatur' },
-              { key: 'Sonstiges', label: 'Sonstiges' },
+              { key: "Reservierung", label: "Reservierung" },
+              { key: "Veranstaltung", label: "Veranstaltung" },
+              { key: "Wartung", label: "Wartung" },
+              { key: "Reparatur", label: "Reparatur" },
+              { key: "Sonstiges", label: "Sonstiges" },
             ] as { key: EventType; label: string }[]
           ).map((item) => (
             <div key={item.key} className="flex items-center gap-2 text-sm">
@@ -397,23 +406,48 @@ export default function MonthCalendar() {
         <AddEventForm defaultDate={selectedDate} onSaved={() => { setOpen(false); load(); }} />
       </Modal>
 
-      {/* Modal lista del día */}
+      {/* Modal lista del día (con borrar) */}
       <Modal open={!!listOpenFor} onClose={() => setListOpenFor(null)}>
         <div className="space-y-4">
           <h3 className="text-xl font-semibold">Einträge am {listOpenFor}</h3>
           <div className="max-h-[55vh] space-y-2 overflow-auto pr-2">
             {(listOpenFor ? (mapped[listOpenFor] || []) : []).map((ev) => (
-              <div key={ev.id} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-neutral-800/80 p-3">
-                <span className="mt-1 h-3.5 w-3.5 shrink-0 rounded-full" style={{ background: TYPE_COLORS[ev.type] }} />
-                <div>
-                  <div className="font-medium">
-                    {ev.title} <span className="text-sm text-gray-300">• {ev.type}</span>
+              <div
+                key={ev.id}
+                className="flex items-start justify-between gap-3 rounded-2xl border border-white/10 bg-neutral-800/80 p-3"
+              >
+                {/* Izquierda */}
+                <div className="flex items-start gap-3">
+                  <span className="mt-1 h-3.5 w-3.5 shrink-0 rounded-full" style={{ background: TYPE_COLORS[ev.type] }} />
+                  <div>
+                    <div className="font-medium">
+                      {ev.title} <span className="text-sm text-gray-300">• {ev.type}</span>
+                    </div>
+                    {ev.description && (
+                      <div className="mt-1 whitespace-pre-wrap text-sm text-gray-300">{ev.description}</div>
+                    )}
                   </div>
-                  {ev.description && <div className="mt-1 whitespace-pre-wrap text-sm text-gray-300">{ev.description}</div>}
                 </div>
+
+                {/* Derecha: borrar */}
+                <button
+                  aria-label="Eintrag löschen"
+                  className="ml-4 rounded-xl p-2 text-gray-300 hover:bg-white/10"
+                  onClick={async () => {
+                    if (confirm("¿Eliminar este evento?")) {
+                      await db.delete(ev.id);
+                      await load();
+                    }
+                  }}
+                  title="Eliminar"
+                >
+                  <Trash2 size={18} />
+                </button>
               </div>
             ))}
-            {listOpenFor && (mapped[listOpenFor] || []).length === 0 && <div className="text-gray-300">Keine Einträge.</div>}
+            {listOpenFor && (mapped[listOpenFor] || []).length === 0 && (
+              <div className="text-gray-300">Keine Einträge.</div>
+            )}
           </div>
         </div>
       </Modal>

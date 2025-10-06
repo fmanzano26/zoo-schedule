@@ -1,15 +1,11 @@
-
-'use client';
 import MonthCalendar from "@/components/MonthCalendar";
 
-export default function Page(){
+export default function Page() {
   return (
-    <div className="min-h-screen bg-neutral-950 text-gray-100">
-      <div className="container pb-10">
-        <main className="mt-4">
-          <MonthCalendar />
-        </main>
+    <main className="min-h-screen bg-neutral-950 text-gray-100">
+      <div className="mx-auto w-full max-w-6xl px-4 pb-10">
+        <MonthCalendar />
       </div>
-    </div>
+    </main>
   );
 }
