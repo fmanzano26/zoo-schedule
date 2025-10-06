@@ -3,29 +3,15 @@ import { useEffect, useMemo, useState, ReactNode, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Plus, CalendarDays } from 'lucide-react';
 import { db, TYPE_COLORS, EventType, DBEvent } from '@/lib/db';
 
-// ========== utilidades de fecha
+// Utilidades de fecha
 function isoDate(d: Date){ const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
 function monthLabel(d: Date, locale='de-CH'){ return d.toLocaleString(locale,{month:'long',year:'numeric'}); }
 function addMonth(d: Date, delta:number){ return new Date(d.getFullYear(), d.getMonth()+delta, 1); }
-function monthMatrix(current: Date){
-  const start=new Date(current.getFullYear(), current.getMonth(),1);
-  const end=new Date(current.getFullYear(), current.getMonth()+1,0);
-  const daysInMonth=end.getDate();
-  const startDow=(start.getDay()+6)%7; // lunes=0
-
-  const cells:(Date|null)[]=[];
-  for(let i=0;i<startDow;i++) cells.push(null);
-  for(let d=1; d<=daysInMonth; d++) cells.push(new Date(current.getFullYear(), current.getMonth(), d));
-  while(cells.length%7!==0) cells.push(null);
-  while(cells.length<42) cells.push(null);
-  const weeks:(Date|null)[][]=[];
-  for(let i=0;i<6;i++) weeks.push(cells.slice(i*7,i*7+7));
-  return weeks;
-}
+function monthMatrix(current: Date){ const start=new Date(current.getFullYear(), current.getMonth(),1); const end=new Date(current.getFullYear(), current.getMonth()+1,0); const daysInMonth=end.getDate(); const startDow=(start.getDay()+6)%7; const cells:(Date|null)[]=[]; for(let i=0;i<startDow;i++) cells.push(null); for(let d=1; d<=daysInMonth; d++) cells.push(new Date(current.getFullYear(), current.getMonth(), d)); while(cells.length%7!==0) cells.push(null); while(cells.length<42) cells.push(null); const weeks:(Date|null)[][]=[]; for(let i=0;i<6;i++) weeks.push(cells.slice(i*7,i*7+7)); return weeks; }
 function formatDateCH(d: Date){ const dd=String(d.getDate()); const mm=String(d.getMonth()+1); const yyyy=d.getFullYear(); return `${dd}.${mm}.${yyyy}`; }
 
-// ========== Modal básico
-function Modal({ open, onClose, children }:{ open:boolean; onClose:()=>void; children:ReactNode }){
+// Modal base
+function Modal({ open, onClose, children }:{ open:boolean; onClose:()=>void; children:ReactNode }) {
   if(!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -38,8 +24,8 @@ function Modal({ open, onClose, children }:{ open:boolean; onClose:()=>void; chi
   );
 }
 
-// ========== Mini DatePicker oscuro con cierre al hacer click fuera
-function MiniDatePicker({ value, onChange, onClose }:{ value:Date; onChange:(d:Date)=>void; onClose:()=>void }){
+// Mini datepicker
+function MiniDatePicker({ value, onChange, onClose }:{ value:Date; onChange:(d:Date)=>void; onClose:()=>void }) {
   const [view,setView]=useState(new Date(value.getFullYear(), value.getMonth(),1));
   const weeks=monthMatrix(view);
   function prev(){ setView(new Date(view.getFullYear(), view.getMonth()-1,1)); }
@@ -55,7 +41,7 @@ function MiniDatePicker({ value, onChange, onClose }:{ value:Date; onChange:(d:D
         <button className="rounded-lg p-1.5 text-gray-300 hover:bg-white/10" onClick={next}><ChevronRight size={16}/></button>
       </div>
       <div className="mb-1 grid grid-cols-7 gap-1 text-center text-xs text-gray-400">
-        {['Mo','Di','Mi','Do','Fr','Sa','So'].map(d=><div key={d} className="py-1">{d}</div>)}
+        {['Mo','Di','Mi','Do','Fr','Sa','So'].map(d=> <div key={d} className="py-1">{d}</div>)}
       </div>
       <div className="grid grid-cols-7 gap-1">
         {weeks.flatMap((w,ri)=> w.map((d,ci)=>{
@@ -73,25 +59,14 @@ function MiniDatePicker({ value, onChange, onClose }:{ value:Date; onChange:(d:D
   );
 }
 
-// ========== Formulario de alta
-function AddEventForm({ defaultDate, onSaved }:{ defaultDate:Date; onSaved:()=>void }){
-  const [title,setTitle]=useState('');
-  const [date,setDate]=useState(isoDate(defaultDate));
-  const [type,setType]=useState<EventType>('Reservierung');
-  const [desc,setDesc]=useState('');
-  const [openPicker,setOpenPicker]=useState(false);
-  const pickerRef=useRef<HTMLDivElement|null>(null);
-
+// Formulario de alta
+function AddEventForm({ defaultDate, onSaved }:{ defaultDate:Date; onSaved:()=>void }) {
+  const [title,setTitle]=useState(''); const [date,setDate]=useState(isoDate(defaultDate)); const [type,setType]=useState<EventType>('Reservierung'); const [desc,setDesc]=useState('');
+  const [openPicker,setOpenPicker]=useState(false); const pickerRef=useRef<HTMLDivElement|null>(null);
   useEffect(()=>{ if(!openPicker) return; function onDown(e:MouseEvent){ const el=pickerRef.current; if(el && !el.contains(e.target as Node)) setOpenPicker(false);} document.addEventListener('mousedown', onDown, true); return ()=>document.removeEventListener('mousedown', onDown, true); }, [openPicker]);
 
-  async function save(e:React.FormEvent){
-    e.preventDefault();
-    if(title.trim().length<2) return;
-    await db.insert({ title, date, type, description: desc });
-    onSaved();
-  }
-
-  const inputCls='w-full rounded-xl bg-neutral-800/80 px-4 py-3 outline-none ring-violet-500/60 focus:ring-2 text-gray-100 placeholder-gray-400';
+  async function save(e:React.FormEvent){ e.preventDefault(); if(title.trim().length<2) return; await db.insert({ title, date, type, description: desc }); onSaved(); }
+  const inputCls="w-full rounded-xl bg-neutral-800/80 px-4 py-3 outline-none ring-violet-500/60 focus:ring-2 text-gray-100 placeholder-gray-400";
 
   return (
     <form onSubmit={save} className="space-y-5 text-gray-100">
@@ -105,9 +80,7 @@ function AddEventForm({ defaultDate, onSaved }:{ defaultDate:Date; onSaved:()=>v
         <div>
           <label className="mb-1 block text-sm text-gray-300">Typ</label>
           <select className={inputCls} value={type} onChange={e=>setType(e.target.value as EventType)}>
-            {(['Reservierung','Veranstaltung','Wartung','Reparatur','Sonstiges'] as EventType[]).map(opt=>(
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
+            {(['Reservierung','Veranstaltung','Wartung','Reparatur','Sonstiges'] as EventType[]).map(opt => (<option key={opt} value={opt}>{opt}</option>))}
           </select>
         </div>
         <div>
@@ -117,7 +90,7 @@ function AddEventForm({ defaultDate, onSaved }:{ defaultDate:Date; onSaved:()=>v
               <input readOnly className={inputCls+' font-medium'} value={formatDateCH(new Date(date))} onClick={()=>setOpenPicker(v=>!v)}/>
               <button type="button" onClick={()=>setOpenPicker(v=>!v)} className="h-[46px] min-w-[46px] rounded-xl border border-white/10 bg-neutral-800/80 p-2 text-gray-200 hover:bg-neutral-700/80"><CalendarDays size={18}/></button>
             </div>
-            {openPicker && <MiniDatePicker value={new Date(date)} onChange={(d)=>setDate(isoDate(d))} onClose={()=>setOpenPicker(false)}/>}
+            {openPicker && (<MiniDatePicker value={new Date(date)} onChange={(d)=>setDate(isoDate(d))} onClose={()=>setOpenPicker(false)} />)}
           </div>
         </div>
         <div>
@@ -140,7 +113,6 @@ function AddEventForm({ defaultDate, onSaved }:{ defaultDate:Date; onSaved:()=>v
   );
 }
 
-// ========== Calendario mensual (ajustes mobile)
 export default function MonthCalendar(){
   const [current,setCurrent]=useState(new Date());
   const [events,setEvents]=useState<DBEvent[]>([]);
@@ -162,7 +134,6 @@ export default function MonthCalendar(){
       const dateObj=new Date(year,month,d); const dateStr=isoDate(dateObj); const dayEvents=mapped[dateStr]||[];
       const isFirst=d===1; const colStart=isFirst? colStartMap[startDow]:'';
       items.push(
-        // ⬇️ Altura más compacta en móvil
         <div key={d} className={`relative h-16 sm:h-20 md:h-24 rounded-2xl border border-white/10 bg-neutral-900/80 transition-colors hover:bg-neutral-800/80 ${colStart}`}>
           <div className="absolute left-3 top-2 text-sm text-gray-300">{d}</div>
           <div className="absolute right-2 top-2 flex gap-1">
@@ -178,13 +149,23 @@ export default function MonthCalendar(){
   return (
     <div className="text-gray-100">
       {/* Título */}
-      <div className="flex items-center justify-between px-5 pt-6 pb-2">
+      <div className="px-5 pt-6">
         <h1 className="text-4xl md:text-5xl font-extrabold text-cyan-300 drop-shadow-[0_0_16px_rgba(125,243,255,0.55)]">Zoo Schedule</h1>
-        <div className="hidden md:block"/>
+
+        {/* Botón NUEVO bajo el título (no flotante) */}
+        <div className="mt-4 flex justify-start md:justify-end">
+          <button
+            aria-label="Neuer Eintrag"
+            onClick={() => { setSelectedDate(new Date()); setOpen(true); }}
+            className="inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-lg shadow-violet-700/30 hover:brightness-110"
+          >
+            <Plus size={18}/> Neuer Eintrag
+          </button>
+        </div>
       </div>
 
       {/* Barra mes */}
-      <div className="mt-4 flex items-center justify-between rounded-2xl border border-white/10 bg-neutral-950/60 px-5 py-4">
+      <div className="mt-4 mx-5 flex items-center justify-between rounded-2xl border border-white/10 bg-neutral-950/60 px-5 py-4">
         <div className="text-lg">{monthLabel(current)}</div>
         <div className="flex items-center gap-2">
           <button className="rounded-xl border border-white/10 bg-neutral-800/80 p-2 text-gray-300 hover:bg-neutral-700/80" onClick={()=>setCurrent(addMonth(current,-1))}><ChevronLeft size={18}/></button>
@@ -202,22 +183,12 @@ export default function MonthCalendar(){
       {/* Días */}
       <DaysGrid />
 
-      {/* Botón flotante — reposicionado para móvil */}
-      <div className="fixed right-4 top-24 z-50 sm:top-16 md:right-6 md:top-6">
-        <button
-          aria-label="Neuer Eintrag"
-          onClick={() => { setSelectedDate(new Date()); setOpen(true); }}
-          className="inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-3 py-2 text-sm shadow-lg shadow-violet-700/30 hover:brightness-110 sm:px-4 sm:py-2 sm:text-base text-white"
-        >
-          <Plus size={18}/> Neuer Eintrag
-        </button>
-      </div>
-
-      {/* Modales */}
+      {/* Modal crear */}
       <Modal open={open} onClose={()=>setOpen(false)}>
-        <AddEventForm defaultDate={selectedDate} onSaved={()=>{ setOpen(false); load(); }}/>
+        <AddEventForm defaultDate={selectedDate} onSaved={()=>{ setOpen(false); load(); }} />
       </Modal>
 
+      {/* Modal lista del día */}
       <Modal open={!!listOpenFor} onClose={()=>setListOpenFor(null)}>
         <div className="space-y-4">
           <h3 className="text-xl font-semibold">Einträge am {listOpenFor}</h3>
