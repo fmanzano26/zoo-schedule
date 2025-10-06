@@ -305,14 +305,26 @@ export default function MonthCalendar() {
       items.push(
         <div
           key={d}
-          className={`relative h-16 sm:h-20 md:h-24 rounded-2xl border border-white/10 bg-neutral-900/80 transition-colors hover:bg-neutral-800/80 ${colStart}`}
+          className={`relative h-16 sm:h-20 md:h-24 rounded-2xl overflow-hidden border border-white/10 bg-neutral-900/80 transition-colors hover:bg-neutral-800/80 ${colStart}`}
         >
           <div className="absolute left-3 top-2 text-sm text-gray-300">{d}</div>
-          <div className="absolute left-3 bottom-2 flex gap-1">
-            {dayEvents.slice(0, 4).map((ev, idx) => (
-              <span key={ev.id + idx} className="h-2 w-2 rounded-full" style={{ background: TYPE_COLORS[ev.type] }} />
+
+          {/* Indicadores abajo, con wrap y +N */}
+          <div className="pointer-events-none absolute inset-x-2 bottom-2 flex flex-wrap items-center gap-1">
+            {dayEvents.slice(0, 3).map((ev, idx) => (
+              <span
+                key={ev.id + idx}
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ background: TYPE_COLORS[ev.type] }}
+              />
             ))}
+            {dayEvents.length > 3 && (
+              <span className="rounded-full bg-neutral-700/80 px-1.5 text-[10px] leading-4 text-gray-200">
+                +{dayEvents.length - 3}
+              </span>
+            )}
           </div>
+
           <button onClick={() => setListOpenFor(dateStr)} className="absolute inset-0" title="Ver eventos del día" />
         </div>,
       );
