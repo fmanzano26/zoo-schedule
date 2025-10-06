@@ -308,7 +308,7 @@ export default function MonthCalendar() {
           className={`relative h-16 sm:h-20 md:h-24 rounded-2xl border border-white/10 bg-neutral-900/80 transition-colors hover:bg-neutral-800/80 ${colStart}`}
         >
           <div className="absolute left-3 top-2 text-sm text-gray-300">{d}</div>
-          <div className="absolute right-2 top-2 flex gap-1">
+          <div className="absolute left-3 bottom-2 flex gap-1">
             {dayEvents.slice(0, 4).map((ev, idx) => (
               <span key={ev.id + idx} className="h-2 w-2 rounded-full" style={{ background: TYPE_COLORS[ev.type] }} />
             ))}
