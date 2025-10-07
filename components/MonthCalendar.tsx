@@ -209,20 +209,26 @@ function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: ()
           <label className="mb-1 block text-sm text-gray-300">Datum</label>
           <div className="relative" ref={pickerRef}>
             <div className="flex items-center gap-2">
-              <input
-                readOnly
-                className={inputCls + " font-medium"}
-                value={formatDateCH(new Date(date))}
-                onClick={() => setOpenPicker((v) => !v)}
-              />
-              <button
-                type="button"
-                onClick={() => setOpenPicker((v) => !v)}
-                className="h-[46px] min-w-[46px] rounded-xl border border-white/10 bg-neutral-800/80 p-2 text-gray-200 hover:bg-neutral-700/80"
-              >
-                <CalendarDays size={18} />
-              </button>
-            </div>
+  <button
+    type="button"
+    aria-label={`Fecha: ${formatDateCH(new Date(date))}`}
+    aria-haspopup="dialog"
+    aria-expanded={openPicker}
+    onClick={() => setOpenPicker((v) => !v)}
+    className={inputCls + " font-medium text-left"}
+  >
+    {formatDateCH(new Date(date))}
+  </button>
+
+  <button
+    type="button"
+    onClick={() => setOpenPicker((v) => !v)}
+    className="h-[46px] min-w-[46px] rounded-xl border border-white/10 bg-neutral-800/80 p-2 text-gray-200 hover:bg-neutral-700/80"
+  >
+    <CalendarDays size={18} />
+  </button>
+</div>
+
             {openPicker && (
               <MiniDatePicker value={new Date(date)} onChange={(d) => setDate(isoDate(d))} onClose={() => setOpenPicker(false)} />
             )}
