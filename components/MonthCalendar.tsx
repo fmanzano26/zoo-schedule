@@ -162,6 +162,7 @@ function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: ()
   const [openPicker, setOpenPicker] = useState(false);
   const pickerRef = useRef<HTMLDivElement | null>(null);
 
+  // Cierre del mini-calendario al click fuera
   useEffect(() => {
     if (!openPicker) return;
     function onDown(e: MouseEvent) {
@@ -268,6 +269,9 @@ export default function MonthCalendar() {
   const [open, setOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [listOpenFor, setListOpenFor] = useState<string | null>(null);
+
+  // NUEVO: confirmación in-app para borrar
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   async function load() {
     const first = new Date(current.getFullYear(), current.getMonth(), 1);
@@ -430,7 +434,13 @@ export default function MonthCalendar() {
       </Modal>
 
       {/* Modal lista del día (con borrar) */}
-      <Modal open={!!listOpenFor} onClose={() => setListOpenFor(null)}>
+      <Modal
+        open={!!listOpenFor}
+        onClose={() => {
+          setListOpenFor(null);
+          setConfirmingId(null); // limpiar confirmación al cerrar
+        }}
+      >
         <div className="space-y-4">
           <h3 className="text-xl font-semibold">Einträge am {listOpenFor}</h3>
           <div className="max-h-[55vh] space-y-2 overflow-auto pr-2">
@@ -452,20 +462,38 @@ export default function MonthCalendar() {
                   </div>
                 </div>
 
-                {/* Derecha: borrar */}
-                <button
-                  aria-label="Eintrag löschen"
-                  className="ml-4 rounded-xl p-2 text-gray-300 hover:bg-white/10"
-                  onClick={async () => {
-                    if (confirm("¿Eliminar este evento?")) {
-                      await db.delete(ev.id);
-                      await load();
-                    }
-                  }}
-                  title="Eliminar"
-                >
-                  <Trash2 size={18} />
-                </button>
+                {/* Derecha: borrar con confirmación in-app */}
+                <div className="ml-4">
+                  {confirmingId === ev.id ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        className="rounded-xl px-3 py-1 text-sm text-gray-200 bg-neutral-700/80 hover:bg-neutral-600/80"
+                        onClick={() => setConfirmingId(null)}
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        className="rounded-xl px-3 py-1 text-sm text-white bg-red-600 hover:bg-red-500"
+                        onClick={async () => {
+                          await db.delete(ev.id);
+                          setConfirmingId(null);
+                          await load();
+                        }}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      aria-label="Eintrag löschen"
+                      className="rounded-xl p-2 text-gray-300 hover:bg-white/10"
+                      onClick={() => setConfirmingId(ev.id)}
+                      title="Eliminar"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
             {listOpenFor && (mapped[listOpenFor] || []).length === 0 && (
