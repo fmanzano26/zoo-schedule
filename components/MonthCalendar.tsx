@@ -270,7 +270,7 @@ export default function MonthCalendar() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [listOpenFor, setListOpenFor] = useState<string | null>(null);
 
-  // NUEVO: confirmación in-app para borrar
+  // Confirmación in-app para borrar
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   async function load() {
@@ -312,9 +312,9 @@ export default function MonthCalendar() {
         >
           <div className="absolute left-3 top-1.5 text-sm text-gray-300">{d}</div>
 
-          {/* Indicadores centrados, con wrap */}
+          {/* Indicadores centrados, con wrap y contador +N */}
           {(() => {
-            const MAX_DOTS = 8; // muestra hasta 8 puntos; el resto va a +N
+            const MAX_DOTS = 8;
             const dots = dayEvents.slice(0, MAX_DOTS);
             return (
               <div
@@ -447,11 +447,14 @@ export default function MonthCalendar() {
             {(listOpenFor ? (mapped[listOpenFor] || []) : []).map((ev) => (
               <div
                 key={ev.id}
-                className="flex items-start justify-between gap-3 rounded-2xl border border-white/10 bg-neutral-800/80 p-3"
+                className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-white/10 bg-neutral-800/80 p-3"
               >
-                {/* Izquierda */}
-                <div className="flex items-start gap-3">
-                  <span className="mt-1 h-3.5 w-3.5 shrink-0 rounded-full" style={{ background: TYPE_COLORS[ev.type] }} />
+                {/* Izquierda (que pueda contraerse) */}
+                <div className="flex min-w-[200px] flex-1 items-start gap-3">
+                  <span
+                    className="mt-1 h-3.5 w-3.5 shrink-0 rounded-full"
+                    style={{ background: TYPE_COLORS[ev.type] }}
+                  />
                   <div>
                     <div className="font-medium">
                       {ev.title} <span className="text-sm text-gray-300">• {ev.type}</span>
@@ -462,18 +465,18 @@ export default function MonthCalendar() {
                   </div>
                 </div>
 
-                {/* Derecha: borrar con confirmación in-app */}
-                <div className="ml-4">
+                {/* Derecha: borrar con confirmación in-app (responsive) */}
+                <div className="ml-0 flex flex-wrap items-center gap-2 sm:ml-4">
                   {confirmingId === ev.id ? (
-                    <div className="flex items-center gap-2">
+                    <>
                       <button
-                        className="rounded-xl px-3 py-1 text-sm text-gray-200 bg-neutral-700/80 hover:bg-neutral-600/80"
+                        className="rounded-xl px-2 py-1 text-xs text-gray-200 bg-neutral-700/80 hover:bg-neutral-600/80 sm:px-3 sm:text-sm"
                         onClick={() => setConfirmingId(null)}
                       >
                         Cancelar
                       </button>
                       <button
-                        className="rounded-xl px-3 py-1 text-sm text-white bg-red-600 hover:bg-red-500"
+                        className="rounded-xl px-2 py-1 text-xs text-white bg-red-600 hover:bg-red-500 whitespace-nowrap sm:px-3 sm:text-sm"
                         onClick={async () => {
                           await db.delete(ev.id);
                           setConfirmingId(null);
@@ -482,7 +485,7 @@ export default function MonthCalendar() {
                       >
                         Eliminar
                       </button>
-                    </div>
+                    </>
                   ) : (
                     <button
                       aria-label="Eintrag löschen"
