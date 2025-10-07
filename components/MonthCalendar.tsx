@@ -57,6 +57,7 @@ function Modal({
       <div className="absolute inset-0 bg-black/70" onClick={onClose} />
       <div className="relative w-[min(720px,92vw)] rounded-2xl border border-white/10 bg-neutral-900 p-6 shadow-2xl">
         <button
+          type="button"
           className="absolute right-4 top-4 rounded-xl p-2 text-gray-300 hover:bg-white/10"
           onClick={onClose}
           aria-label="close"
@@ -105,7 +106,7 @@ function MiniDatePicker({
     return () => document.removeEventListener("mousedown", onDown, true);
   }, [onClose]);
 
-  // 🔒 Al montar el picker, asegura que ningún input/textarea tenga foco (evita teclado)
+  // Al montar el picker, asegura que ningún input/textarea tenga foco (evita teclado)
   useEffect(() => {
     const el = document.activeElement as HTMLElement | null;
     if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
@@ -113,23 +114,36 @@ function MiniDatePicker({
     }
   }, []);
 
+  // Evita que los botones del picker muevan el foco o hagan submit del form
+  const stopAll = (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   return (
-    <div ref={popRef} className="absolute z-50 mt-2 w-72 rounded-2xl border border-white/10 bg-neutral-900 p-3 shadow-2xl">
+    <div
+      ref={popRef}
+      className="absolute z-50 mt-2 w-72 rounded-2xl border border-white/10 bg-neutral-900 p-3 shadow-2xl"
+      role="dialog"
+      aria-modal="true"
+    >
       <div className="mb-2 flex items-center justify-between">
         <button
+          type="button"
           className="rounded-lg p-1.5 text-gray-300 hover:bg-white/10"
           onClick={prev}
-          onMouseDown={(e) => e.preventDefault()}
-          onTouchStart={(e) => e.preventDefault()}
+          onMouseDown={stopAll}
+          onTouchStart={stopAll}
         >
           <ChevronLeft size={16} />
         </button>
         <div className="text-sm text-gray-200">{monthLabel(view)}</div>
         <button
+          type="button"
           className="rounded-lg p-1.5 text-gray-300 hover:bg-white/10"
           onClick={next}
-          onMouseDown={(e) => e.preventDefault()}
-          onTouchStart={(e) => e.preventDefault()}
+          onMouseDown={stopAll}
+          onTouchStart={stopAll}
         >
           <ChevronRight size={16} />
         </button>
@@ -157,10 +171,11 @@ function MiniDatePicker({
 
             return (
               <button
+                type="button"
                 key={`${ri}-${ci}`}
                 onClick={() => select(d!)}
-                onMouseDown={(e) => e.preventDefault()}   // evita focus fantasma
-                onTouchStart={(e) => e.preventDefault()}  // idem móvil
+                onMouseDown={stopAll}
+                onTouchStart={stopAll}
                 className={`h-8 rounded-lg text-sm hover:bg-neutral-700/70 ${
                   isSel ? "bg-violet-600 text-white" : "bg-neutral-800/70 text-gray-200"
                 }`}
@@ -195,7 +210,7 @@ function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: ()
     return () => document.removeEventListener("mousedown", onDown, true);
   }, [openPicker]);
 
-  // 🔒 Abrir/cerrar picker blureando cualquier input activo (evita teclado en móvil)
+  // Abrir/cerrar picker blureando cualquier input activo (evita teclado en móvil)
   function togglePicker() {
     (document.activeElement as HTMLElement | null)?.blur();
     setOpenPicker((v) => !v);
@@ -237,7 +252,7 @@ function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: ()
           <label className="mb-1 block text-sm text-gray-300">Datum</label>
           <div className="relative" ref={pickerRef}>
             <div className="flex items-center gap-2">
-              {/* ⬇️ Botón con estilo de input (no abre teclado) */}
+              {/* Botón con estilo de input (no abre teclado) */}
               <button
                 type="button"
                 aria-label={`Fecha: ${formatDateCH(new Date(date))}`}
@@ -378,7 +393,7 @@ export default function MonthCalendar() {
             );
           })()}
 
-          <button onClick={() => setListOpenFor(dateStr)} className="absolute inset-0" title="Ver eventos del día" />
+          <button type="button" onClick={() => setListOpenFor(dateStr)} className="absolute inset-0" title="Ver eventos del día" />
         </div>,
       );
     }
@@ -396,6 +411,7 @@ export default function MonthCalendar() {
         {/* Botón NUEVO debajo del título (no flotante) */}
         <div className="mt-4 flex justify-start md:justify-end">
           <button
+            type="button"
             aria-label="Neuer Eintrag"
             onClick={() => {
               setSelectedDate(new Date());
@@ -413,12 +429,14 @@ export default function MonthCalendar() {
         <div className="text-lg">{monthLabel(current)}</div>
         <div className="flex items-center gap-2">
           <button
+            type="button"
             className="rounded-xl border border-white/10 bg-neutral-800/80 p-2 text-gray-300 hover:bg-neutral-700/80"
             onClick={() => setCurrent(addMonth(current, -1))}
           >
             <ChevronLeft size={18} />
           </button>
           <button
+            type="button"
             className="rounded-xl border border-white/10 bg-neutral-800/80 p-2 text-gray-300 hover:bg-neutral-700/80"
             onClick={() => setCurrent(addMonth(current, 1))}
           >
@@ -508,12 +526,14 @@ export default function MonthCalendar() {
                   {confirmingId === ev.id ? (
                     <>
                       <button
+                        type="button"
                         className="rounded-xl px-2 py-1 text-xs text-gray-200 bg-neutral-700/80 hover:bg-neutral-600/80 sm:px-3 sm:text-sm"
                         onClick={() => setConfirmingId(null)}
                       >
                         Cancelar
                       </button>
                       <button
+                        type="button"
                         className="rounded-xl px-2 py-1 text-xs text-white bg-red-600 hover:bg-red-500 whitespace-nowrap sm:px-3 sm:text-sm"
                         onClick={async () => {
                           await db.delete(ev.id);
@@ -526,6 +546,7 @@ export default function MonthCalendar() {
                     </>
                   ) : (
                     <button
+                      type="button"
                       aria-label="Eintrag löschen"
                       className="rounded-xl p-2 text-gray-300 hover:bg-white/10"
                       onClick={() => setConfirmingId(ev.id)}
