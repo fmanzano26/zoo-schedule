@@ -162,7 +162,6 @@ function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: ()
   const [openPicker, setOpenPicker] = useState(false);
   const pickerRef = useRef<HTMLDivElement | null>(null);
 
-  // Cierre del mini-calendario al click fuera
   useEffect(() => {
     if (!openPicker) return;
     function onDown(e: MouseEvent) {
@@ -305,26 +304,37 @@ export default function MonthCalendar() {
       items.push(
         <div
           key={d}
-          className={`relative h-16 sm:h-20 md:h-24 rounded-2xl overflow-hidden border border-white/10 bg-neutral-900/80 transition-colors hover:bg-neutral-800/80 ${colStart}`}
+          className={`relative h-12 sm:h-14 md:h-16 rounded-2xl overflow-hidden border border-white/10 bg-neutral-900/80 transition-colors hover:bg-neutral-800/80 ${colStart}`}
         >
-          <div className="absolute left-3 top-2 text-sm text-gray-300">{d}</div>
+          <div className="absolute left-3 top-1.5 text-sm text-gray-300">{d}</div>
 
-          {/* Indicadores abajo, con wrap y +N */}
-          <div className="pointer-events-none absolute inset-x-2 bottom-1 flex flex-wrap items-center gap-1">
-  {dayEvents.slice(0, 3).map((ev, idx) => (
-    <span
-      key={ev.id + idx}
-      className="h-1.5 w-1.5 md:h-2 md:w-2 rounded-full"
-      style={{ background: TYPE_COLORS[ev.type] }}
-    />
-  ))}
-  {dayEvents.length > 3 && (
-    <span className="rounded-full bg-neutral-700/80 px-1 text-[9px] leading-4 text-gray-200 md:px-1.5 md:text-[10px]">
-      +{dayEvents.length - 3}
-    </span>
-  )}
-</div>
+          {/* Indicadores centrados, con wrap */}
+          {(() => {
+            const MAX_DOTS = 8; // muestra hasta 8 puntos; el resto va a +N
+            const dots = dayEvents.slice(0, MAX_DOTS);
+            return (
+              <div
+                className="
+                  pointer-events-none absolute bottom-1 left-1/2 -translate-x-1/2
+                  w-[calc(100%-16px)] flex flex-wrap justify-center content-center gap-1
+                "
+              >
+                {dots.map((ev, idx) => (
+                  <span
+                    key={ev.id + idx}
+                    className="h-1.5 w-1.5 md:h-2 md:w-2 rounded-full"
+                    style={{ background: TYPE_COLORS[ev.type] }}
+                  />
+                ))}
 
+                {dayEvents.length > MAX_DOTS && (
+                  <span className="rounded-full bg-neutral-700/80 px-1 text-[9px] leading-4 text-gray-200 md:px-1.5 md:text-[10px]">
+                    +{dayEvents.length - MAX_DOTS}
+                  </span>
+                )}
+              </div>
+            );
+          })()}
 
           <button onClick={() => setListOpenFor(dateStr)} className="absolute inset-0" title="Ver eventos del día" />
         </div>,
