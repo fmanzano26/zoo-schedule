@@ -1,5 +1,4 @@
-import { supabase } from "./supabase";
-
+// lib/db.ts
 export type EventType =
   | "Reservierung"
   | "Veranstaltung"
@@ -24,30 +23,45 @@ export const TYPE_COLORS: Record<EventType, string> = {
   Sonstiges: "#f472b6",
 };
 
+async function api<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, {
+    ...init,
+    headers: {
+      "content-type": "application/json",
+      ...(init?.headers ?? {}),
+    },
+  });
+
+  if (!res.ok) {
+    let msg = `${res.status} ${res.statusText}`;
+    try {
+      const j = await res.json();
+      if (j?.error) msg = j.error;
+    } catch {}
+    throw new Error(msg);
+  }
+  return (await res.json()) as T;
+}
+
 export const db = {
   async range(fromISO: string, toISO: string): Promise<DBEvent[]> {
-    const { data, error } = await supabase
-      .from("events")
-      .select("*")
-      .gte("date", fromISO)
-      .lte("date", toISO)
-      .order("date", { ascending: true });
-    if (error) throw error;
-    return (data ?? []) as DBEvent[];
+    const qs = new URLSearchParams({ from: fromISO, to: toISO }).toString();
+    return api<DBEvent[]>(`/api/events/range?${qs}`);
   },
 
-  async insert(ev: Pick<DBEvent, "title" | "date" | "type" | "description">): Promise<DBEvent> {
-    const { data, error } = await supabase
-      .from("events")
-      .insert(ev)
-      .select()
-      .single();
-    if (error) throw error;
-    return data as DBEvent;
+  async insert(
+    ev: Pick<DBEvent, "title" | "date" | "type" | "description">
+  ): Promise<DBEvent> {
+    return api<DBEvent>("/api/events/insert", {
+      method: "POST",
+      body: JSON.stringify(ev),
+    });
   },
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase.from("events").delete().eq("id", id);
-    if (error) throw error;
+    return api<void>("/api/events/delete", {
+      method: "POST",
+      body: JSON.stringify({ id }),
+    });
   },
 };
