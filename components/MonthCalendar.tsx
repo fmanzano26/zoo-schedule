@@ -94,6 +94,8 @@ function MiniDatePicker({
   }
 
   const popRef = useRef<HTMLDivElement | null>(null);
+
+  // Cierre por clic fuera
   useEffect(() => {
     function onDown(e: MouseEvent) {
       const el = popRef.current;
@@ -103,14 +105,32 @@ function MiniDatePicker({
     return () => document.removeEventListener("mousedown", onDown, true);
   }, [onClose]);
 
+  // 🔒 Al montar el picker, asegura que ningún input/textarea tenga foco (evita teclado)
+  useEffect(() => {
+    const el = document.activeElement as HTMLElement | null;
+    if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
+      el.blur();
+    }
+  }, []);
+
   return (
     <div ref={popRef} className="absolute z-50 mt-2 w-72 rounded-2xl border border-white/10 bg-neutral-900 p-3 shadow-2xl">
       <div className="mb-2 flex items-center justify-between">
-        <button className="rounded-lg p-1.5 text-gray-300 hover:bg-white/10" onClick={prev}>
+        <button
+          className="rounded-lg p-1.5 text-gray-300 hover:bg-white/10"
+          onClick={prev}
+          onMouseDown={(e) => e.preventDefault()}
+          onTouchStart={(e) => e.preventDefault()}
+        >
           <ChevronLeft size={16} />
         </button>
         <div className="text-sm text-gray-200">{monthLabel(view)}</div>
-        <button className="rounded-lg p-1.5 text-gray-300 hover:bg-white/10" onClick={next}>
+        <button
+          className="rounded-lg p-1.5 text-gray-300 hover:bg-white/10"
+          onClick={next}
+          onMouseDown={(e) => e.preventDefault()}
+          onTouchStart={(e) => e.preventDefault()}
+        >
           <ChevronRight size={16} />
         </button>
       </div>
@@ -139,6 +159,8 @@ function MiniDatePicker({
               <button
                 key={`${ri}-${ci}`}
                 onClick={() => select(d!)}
+                onMouseDown={(e) => e.preventDefault()}   // evita focus fantasma
+                onTouchStart={(e) => e.preventDefault()}  // idem móvil
                 className={`h-8 rounded-lg text-sm hover:bg-neutral-700/70 ${
                   isSel ? "bg-violet-600 text-white" : "bg-neutral-800/70 text-gray-200"
                 }`}
@@ -172,6 +194,12 @@ function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: ()
     document.addEventListener("mousedown", onDown, true);
     return () => document.removeEventListener("mousedown", onDown, true);
   }, [openPicker]);
+
+  // 🔒 Abrir/cerrar picker blureando cualquier input activo (evita teclado en móvil)
+  function togglePicker() {
+    (document.activeElement as HTMLElement | null)?.blur();
+    setOpenPicker((v) => !v);
+  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -209,28 +237,32 @@ function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: ()
           <label className="mb-1 block text-sm text-gray-300">Datum</label>
           <div className="relative" ref={pickerRef}>
             <div className="flex items-center gap-2">
-  <button
-    type="button"
-    aria-label={`Fecha: ${formatDateCH(new Date(date))}`}
-    aria-haspopup="dialog"
-    aria-expanded={openPicker}
-    onClick={() => setOpenPicker((v) => !v)}
-    className={inputCls + " font-medium text-left"}
-  >
-    {formatDateCH(new Date(date))}
-  </button>
+              {/* ⬇️ Botón con estilo de input (no abre teclado) */}
+              <button
+                type="button"
+                aria-label={`Fecha: ${formatDateCH(new Date(date))}`}
+                aria-haspopup="dialog"
+                aria-expanded={openPicker}
+                onClick={togglePicker}
+                className={inputCls + " font-medium text-left"}
+              >
+                {formatDateCH(new Date(date))}
+              </button>
 
-  <button
-    type="button"
-    onClick={() => setOpenPicker((v) => !v)}
-    className="h-[46px] min-w-[46px] rounded-xl border border-white/10 bg-neutral-800/80 p-2 text-gray-200 hover:bg-neutral-700/80"
-  >
-    <CalendarDays size={18} />
-  </button>
-</div>
-
+              <button
+                type="button"
+                onClick={togglePicker}
+                className="h-[46px] min-w-[46px] rounded-xl border border-white/10 bg-neutral-800/80 p-2 text-gray-200 hover:bg-neutral-700/80"
+              >
+                <CalendarDays size={18} />
+              </button>
+            </div>
             {openPicker && (
-              <MiniDatePicker value={new Date(date)} onChange={(d) => setDate(isoDate(d))} onClose={() => setOpenPicker(false)} />
+              <MiniDatePicker
+                value={new Date(date)}
+                onChange={(d) => setDate(isoDate(d))}
+                onClose={() => setOpenPicker(false)}
+              />
             )}
           </div>
         </div>
