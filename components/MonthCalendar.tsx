@@ -310,20 +310,21 @@ export default function MonthCalendar() {
           <div className="absolute left-3 top-2 text-sm text-gray-300">{d}</div>
 
           {/* Indicadores abajo, con wrap y +N */}
-          <div className="pointer-events-none absolute inset-x-2 bottom-2 flex flex-wrap items-center gap-1">
-            {dayEvents.slice(0, 3).map((ev, idx) => (
-              <span
-                key={ev.id + idx}
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ background: TYPE_COLORS[ev.type] }}
-              />
-            ))}
-            {dayEvents.length > 3 && (
-              <span className="rounded-full bg-neutral-700/80 px-1.5 text-[10px] leading-4 text-gray-200">
-                +{dayEvents.length - 3}
-              </span>
-            )}
-          </div>
+          <div className="pointer-events-none absolute inset-x-2 bottom-1 flex flex-wrap items-center gap-1">
+  {dayEvents.slice(0, 3).map((ev, idx) => (
+    <span
+      key={ev.id + idx}
+      className="h-1.5 w-1.5 md:h-2 md:w-2 rounded-full"
+      style={{ background: TYPE_COLORS[ev.type] }}
+    />
+  ))}
+  {dayEvents.length > 3 && (
+    <span className="rounded-full bg-neutral-700/80 px-1 text-[9px] leading-4 text-gray-200 md:px-1.5 md:text-[10px]">
+      +{dayEvents.length - 3}
+    </span>
+  )}
+</div>
+
 
           <button onClick={() => setListOpenFor(dateStr)} className="absolute inset-0" title="Ver eventos del día" />
         </div>,
