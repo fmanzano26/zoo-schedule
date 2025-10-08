@@ -105,7 +105,7 @@ function MiniDatePicker({
     return () => document.removeEventListener("mousedown", onDown, true);
   }, [onClose]);
 
-  // Evitar que aparezca teclado en móvil
+  // Evitar teclado en móvil (no hay inputs aquí)
   const stopAll = (e: React.SyntheticEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -172,7 +172,7 @@ function MiniDatePicker({
 /* ================== Formulario de alta ================== */
 function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: () => void }) {
   const [title, setTitle] = useState("");
-  const [date, setDate] = useState(isoDate(defaultDate));
+  the [date, setDate] = useState(isoDate(defaultDate));
   const [type, setType] = useState<EventType>("Reservierung");
   const [desc, setDesc] = useState("");
   const [openPicker, setOpenPicker] = useState(false);
@@ -308,28 +308,19 @@ export default function MonthCalendar() {
     setEvents(data);
   }
 
-  // Mini-retry: por si Sheets tarda un poco en reflejar escrituras
+  // ⬇️ Mini-retry por latencia de Sheets
   async function loadWithRetry(tries = 2) {
-    try {
-      await load();
-    } catch {}
-    if (tries > 0) {
-      setTimeout(() => void loadWithRetry(tries - 1), 350);
-    }
+    try { await load(); } catch {}
+    if (tries > 0) setTimeout(() => void loadWithRetry(tries - 1), 350);
   }
 
-  useEffect(() => {
-    load();
-  }, [current]);
+  // Carga inicial y al cambiar de mes
+  useEffect(() => { void load(); }, [current]);
 
-  // 🔁 Refrescar al volver a primer plano / foco (PWA iOS y navegador)
+  // ⬇️ Refrescar al volver a foco/visible (pestaña y PWA)
   useEffect(() => {
-    const onFocus = () => {
-      void load();
-    };
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") void load();
-    };
+    const onFocus = () => { void load(); };
+    const onVisibility = () => { if (document.visibilityState === "visible") void load(); };
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
@@ -337,6 +328,19 @@ export default function MonthCalendar() {
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
+
+  // ⬇️ NUEVO: Polling cada 20s solo cuando está visible
+  useEffect(() => {
+    let timer: any;
+    const start = () => {
+      clearInterval(timer);
+      timer = setInterval(() => {
+        if (document.visibilityState === "visible") void load();
+      }, 20000); // 20s
+    };
+    start();
+    return () => clearInterval(timer);
+  }, [current]); // si cambias de mes, reinicia el ciclo
 
   const mapped = useMemo(() => {
     const m: Record<string, DBEvent[]> = {};
@@ -350,7 +354,7 @@ export default function MonthCalendar() {
     const first = new Date(year, month, 1);
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const startDow = (first.getDay() + 6) % 7;
-    const colStartMap = ["col-start-1", "col-start-2", "col-start-3", "col-start-4", "col-start-5", "col-start-6", "col-start-7"];
+    const colStartMap = ["col-start-1","col-start-2","col-start-3","col-start-4","col-start-5","col-start-6","col-start-7"];
 
     const items: JSX.Element[] = [];
     for (let d = 1; d <= daysInMonth; d++) {
@@ -374,11 +378,7 @@ export default function MonthCalendar() {
             return (
               <div className="pointer-events-none absolute bottom-1 left-1/2 -translate-x-1/2 w-[calc(100%-16px)] flex flex-wrap justify-center content-center gap-1">
                 {dots.map((ev, idx) => (
-                  <span
-                    key={ev.id + idx}
-                    className="h-1.5 w-1.5 md:h-2 md:w-2 rounded-full"
-                    style={{ background: TYPE_COLORS[ev.type] }}
-                  />
+                  <span key={ev.id + idx} className="h-1.5 w-1.5 md:h-2 md:w-2 rounded-full" style={{ background: TYPE_COLORS[ev.type] }} />
                 ))}
                 {dayEvents.length > MAX_DOTS && (
                   <span className="rounded-full bg-neutral-700/80 px-1 text-[9px] leading-4 text-gray-200 md:px-1.5 md:text-[10px]">
