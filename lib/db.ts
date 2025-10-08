@@ -23,6 +23,12 @@ export const TYPE_COLORS: Record<EventType, string> = {
   Sonstiges: "#f472b6",
 };
 
+// lib/db.ts (arriba del todo)
+const BASE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (typeof window !== "undefined" ? window.location.origin : "");
+  
+
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     ...init,
