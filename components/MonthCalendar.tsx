@@ -172,7 +172,7 @@ function MiniDatePicker({
 /* ================== Formulario de alta ================== */
 function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: () => void }) {
   const [title, setTitle] = useState("");
-  the [date, setDate] = useState(isoDate(defaultDate));
+  const [date, setDate] = useState(isoDate(defaultDate));
   const [type, setType] = useState<EventType>("Reservierung");
   const [desc, setDesc] = useState("");
   const [openPicker, setOpenPicker] = useState(false);
