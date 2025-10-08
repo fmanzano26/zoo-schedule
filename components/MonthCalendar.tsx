@@ -473,7 +473,7 @@ export default function MonthCalendar() {
         }}
       >
         <div className="space-y-4">
-          <h3 className="text-xl font-semibold">Entradas del {listOpenFor}</h3>
+          <h3 className="text-xl font-semibold">Einträge am {listOpenFor}</h3>
           <div className="max-h-[55vh] space-y-2 overflow-auto pr-2">
             {(listOpenFor ? (mapped[listOpenFor] || []) : []).map((ev) => (
               <div
