@@ -279,13 +279,13 @@ function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: ()
           className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-neutral-800/80 px-4 py-2 text-gray-200 hover:bg-neutral-700/80"
           onClick={onSaved}
         >
-          Cancelar
+          Abbrechen
         </button>
         <button
           type="submit"
           className="inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-4 py-2 font-medium text-white shadow-lg shadow-violet-700/30 hover:brightness-110"
         >
-          Guardar
+          Speichern
         </button>
       </div>
     </form>
@@ -498,7 +498,7 @@ export default function MonthCalendar() {
                         className="rounded-xl px-2 py-1 text-xs text-gray-200 bg-neutral-700/80 hover:bg-neutral-600/80 sm:px-3 sm:text-sm"
                         onClick={() => setConfirmingId(null)}
                       >
-                        Cancelar
+                        Abbrechen
                       </button>
                       <button
                         type="button"
@@ -509,7 +509,7 @@ export default function MonthCalendar() {
                           await load();
                         }}
                       >
-                        Eliminar
+                        Löschen
                       </button>
                     </>
                   ) : (
