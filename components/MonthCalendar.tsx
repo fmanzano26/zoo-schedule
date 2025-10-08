@@ -530,7 +530,7 @@ export default function MonthCalendar() {
                         className="rounded-xl px-2 py-1 text-xs text-gray-200 bg-neutral-700/80 hover:bg-neutral-600/80 sm:px-3 sm:text-sm"
                         onClick={() => setConfirmingId(null)}
                       >
-                        Cancelar
+                        Abbrechen
                       </button>
                       <button
                         type="button"
@@ -541,7 +541,7 @@ export default function MonthCalendar() {
                           await load();
                         }}
                       >
-                        Eliminar
+                        Löschen
                       </button>
                     </>
                   ) : (
