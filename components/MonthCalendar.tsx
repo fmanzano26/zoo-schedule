@@ -105,7 +105,7 @@ function MiniDatePicker({
     return () => document.removeEventListener("mousedown", onDown, true);
   }, [onClose]);
 
-  // Evitar teclado en móvil (no hay inputs aquí)
+  // Evitar que aparezca teclado: no hay inputs en el picker, y paramos el foco
   const stopAll = (e: React.SyntheticEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -229,7 +229,6 @@ function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: ()
           <label className="mb-1 block text-sm text-gray-300">Datum</label>
           <div className="relative" ref={pickerRef}>
             <div className="flex items-center gap-2">
-              {/* Botón con aspecto de input: no abre teclado */}
               <button
                 type="button"
                 aria-label={`Fecha: ${formatDateCH(new Date(date))}`}
@@ -308,39 +307,32 @@ export default function MonthCalendar() {
     setEvents(data);
   }
 
-  // ⬇️ Mini-retry por latencia de Sheets
-  async function loadWithRetry(tries = 2) {
-    try { await load(); } catch {}
-    if (tries > 0) setTimeout(() => void loadWithRetry(tries - 1), 350);
-  }
-
-  // Carga inicial y al cambiar de mes
-  useEffect(() => { void load(); }, [current]);
-
-  // ⬇️ Refrescar al volver a foco/visible (pestaña y PWA)
+  // Carga cuando cambia el mes
   useEffect(() => {
-    const onFocus = () => { void load(); };
-    const onVisibility = () => { if (document.visibilityState === "visible") void load(); };
+    load();
+  }, [current]);
+
+  // 🔁 Auto-refresh cada 5 s (ajústalo si quieres)
+  useEffect(() => {
+    const id = setInterval(() => {
+      load();
+    }, 5000); // 3000-5000 es buen rango
+    return () => clearInterval(id);
+  }, [current]);
+
+  // 🔔 Refrescar al volver a foco/visibilidad
+  useEffect(() => {
+    const onFocus = () => load();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") load();
+    };
     window.addEventListener("focus", onFocus);
-    document.addEventListener("visibilitychange", onVisibility);
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       window.removeEventListener("focus", onFocus);
-      document.removeEventListener("visibilitychange", onVisibility);
+      document.removeEventListener("visibilitychange", onVisible);
     };
-  }, []);
-
-  // ⬇️ NUEVO: Polling cada 20s solo cuando está visible
-  useEffect(() => {
-    let timer: any;
-    const start = () => {
-      clearInterval(timer);
-      timer = setInterval(() => {
-        if (document.visibilityState === "visible") void load();
-      }, 20000); // 20s
-    };
-    start();
-    return () => clearInterval(timer);
-  }, [current]); // si cambias de mes, reinicia el ciclo
+  }, [current]);
 
   const mapped = useMemo(() => {
     const m: Record<string, DBEvent[]> = {};
@@ -354,7 +346,7 @@ export default function MonthCalendar() {
     const first = new Date(year, month, 1);
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const startDow = (first.getDay() + 6) % 7;
-    const colStartMap = ["col-start-1","col-start-2","col-start-3","col-start-4","col-start-5","col-start-6","col-start-7"];
+    const colStartMap = ["col-start-1", "col-start-2", "col-start-3", "col-start-4", "col-start-5", "col-start-6", "col-start-7"];
 
     const items: JSX.Element[] = [];
     for (let d = 1; d <= daysInMonth; d++) {
@@ -378,7 +370,11 @@ export default function MonthCalendar() {
             return (
               <div className="pointer-events-none absolute bottom-1 left-1/2 -translate-x-1/2 w-[calc(100%-16px)] flex flex-wrap justify-center content-center gap-1">
                 {dots.map((ev, idx) => (
-                  <span key={ev.id + idx} className="h-1.5 w-1.5 md:h-2 md:w-2 rounded-full" style={{ background: TYPE_COLORS[ev.type] }} />
+                  <span
+                    key={ev.id + idx}
+                    className="h-1.5 w-1.5 md:h-2 md:w-2 rounded-full"
+                    style={{ background: TYPE_COLORS[ev.type] }}
+                  />
                 ))}
                 {dayEvents.length > MAX_DOTS && (
                   <span className="rounded-full bg-neutral-700/80 px-1 text-[9px] leading-4 text-gray-200 md:px-1.5 md:text-[10px]">
@@ -486,12 +482,12 @@ export default function MonthCalendar() {
           defaultDate={selectedDate}
           onSaved={() => {
             setOpen(false);
-            void loadWithRetry(); // refresco inmediato + retry
+            load();
           }}
         />
       </Modal>
 
-      {/* Modal lista del día (con borrar) */}
+      {/* Modal lista del día */}
       <Modal
         open={!!listOpenFor}
         onClose={() => {
@@ -533,7 +529,7 @@ export default function MonthCalendar() {
                         onClick={async () => {
                           await db.delete(ev.id);
                           setConfirmingId(null);
-                          void loadWithRetry(); // refresco inmediato + retry
+                          await load();
                         }}
                       >
                         Löschen
@@ -554,7 +550,7 @@ export default function MonthCalendar() {
               </div>
             ))}
             {listOpenFor && (mapped[listOpenFor] || []).length === 0 && (
-              <div className="text-gray-300">Keine Einträge.</div>
+              <div className="text-gray-300">No hay entradas.</div>
             )}
           </div>
         </div>
