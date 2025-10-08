@@ -96,7 +96,6 @@ function MiniDatePicker({
 
   const popRef = useRef<HTMLDivElement | null>(null);
 
-  // Cierre por clic fuera
   useEffect(() => {
     function onDown(e: MouseEvent) {
       const el = popRef.current;
@@ -106,15 +105,7 @@ function MiniDatePicker({
     return () => document.removeEventListener("mousedown", onDown, true);
   }, [onClose]);
 
-  // Al montar el picker, asegura que ningún input/textarea tenga foco (evita teclado)
-  useEffect(() => {
-    const el = document.activeElement as HTMLElement | null;
-    if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
-      el.blur();
-    }
-  }, []);
-
-  // Evita que los botones del picker muevan el foco o hagan submit del form
+  // Evitar que aparezca teclado: no hay inputs en el picker, y paramos el foco
   const stopAll = (e: React.SyntheticEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -128,23 +119,11 @@ function MiniDatePicker({
       aria-modal="true"
     >
       <div className="mb-2 flex items-center justify-between">
-        <button
-          type="button"
-          className="rounded-lg p-1.5 text-gray-300 hover:bg-white/10"
-          onClick={prev}
-          onMouseDown={stopAll}
-          onTouchStart={stopAll}
-        >
+        <button type="button" className="rounded-lg p-1.5 text-gray-300 hover:bg-white/10" onClick={prev} onMouseDown={stopAll} onTouchStart={stopAll}>
           <ChevronLeft size={16} />
         </button>
         <div className="text-sm text-gray-200">{monthLabel(view)}</div>
-        <button
-          type="button"
-          className="rounded-lg p-1.5 text-gray-300 hover:bg-white/10"
-          onClick={next}
-          onMouseDown={stopAll}
-          onTouchStart={stopAll}
-        >
+        <button type="button" className="rounded-lg p-1.5 text-gray-300 hover:bg-white/10" onClick={next} onMouseDown={stopAll} onTouchStart={stopAll}>
           <ChevronRight size={16} />
         </button>
       </div>
@@ -199,7 +178,6 @@ function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: ()
   const [openPicker, setOpenPicker] = useState(false);
   const pickerRef = useRef<HTMLDivElement | null>(null);
 
-  // Cierre del mini-calendario al click fuera
   useEffect(() => {
     if (!openPicker) return;
     function onDown(e: MouseEvent) {
@@ -210,7 +188,6 @@ function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: ()
     return () => document.removeEventListener("mousedown", onDown, true);
   }, [openPicker]);
 
-  // Abrir/cerrar picker blureando cualquier input activo (evita teclado en móvil)
   function togglePicker() {
     (document.activeElement as HTMLElement | null)?.blur();
     setOpenPicker((v) => !v);
@@ -252,7 +229,7 @@ function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: ()
           <label className="mb-1 block text-sm text-gray-300">Datum</label>
           <div className="relative" ref={pickerRef}>
             <div className="flex items-center gap-2">
-              {/* Botón con estilo de input (no abre teclado) */}
+              {/* Botón con aspecto de input: no abre teclado */}
               <button
                 type="button"
                 aria-label={`Fecha: ${formatDateCH(new Date(date))}`}
@@ -302,13 +279,13 @@ function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: ()
           className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-neutral-800/80 px-4 py-2 text-gray-200 hover:bg-neutral-700/80"
           onClick={onSaved}
         >
-          Abbrechen
+          Cancelar
         </button>
         <button
           type="submit"
           className="inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-4 py-2 font-medium text-white shadow-lg shadow-violet-700/30 hover:brightness-110"
         >
-          Speichern
+          Guardar
         </button>
       </div>
     </form>
@@ -322,8 +299,6 @@ export default function MonthCalendar() {
   const [open, setOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [listOpenFor, setListOpenFor] = useState<string | null>(null);
-
-  // Confirmación in-app para borrar
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   async function load() {
@@ -370,12 +345,7 @@ export default function MonthCalendar() {
             const MAX_DOTS = 8;
             const dots = dayEvents.slice(0, MAX_DOTS);
             return (
-              <div
-                className="
-                  pointer-events-none absolute bottom-1 left-1/2 -translate-x-1/2
-                  w-[calc(100%-16px)] flex flex-wrap justify-center content-center gap-1
-                "
-              >
+              <div className="pointer-events-none absolute bottom-1 left-1/2 -translate-x-1/2 w-[calc(100%-16px)] flex flex-wrap justify-center content-center gap-1">
                 {dots.map((ev, idx) => (
                   <span
                     key={ev.id + idx}
@@ -383,7 +353,6 @@ export default function MonthCalendar() {
                     style={{ background: TYPE_COLORS[ev.type] }}
                   />
                 ))}
-
                 {dayEvents.length > MAX_DOTS && (
                   <span className="rounded-full bg-neutral-700/80 px-1 text-[9px] leading-4 text-gray-200 md:px-1.5 md:text-[10px]">
                     +{dayEvents.length - MAX_DOTS}
@@ -393,15 +362,19 @@ export default function MonthCalendar() {
             );
           })()}
 
+          {/* CLICK: si hay eventos → lista; si no → nuevo */}
           <button
-  onClick={() => {
-    setSelectedDate(dateObj); // fecha del día pulsado
-    setOpen(true);            // abre el formulario de nueva entrada
-  }}
-  className="absolute inset-0"
-  title="Neuer Eintrag"
- />
-
+            onClick={() => {
+              if (dayEvents.length > 0) {
+                setListOpenFor(dateStr);
+              } else {
+                setSelectedDate(dateObj);
+                setOpen(true);
+              }
+            }}
+            className="absolute inset-0"
+            title="Abrir"
+          />
         </div>,
       );
     }
@@ -416,7 +389,7 @@ export default function MonthCalendar() {
           Zoo Schedule
         </h1>
 
-        {/* Botón NUEVO debajo del título (no flotante) */}
+        {/* Botón NUEVO */}
         <div className="mt-4 flex justify-start md:justify-end">
           <button
             type="button"
@@ -436,18 +409,10 @@ export default function MonthCalendar() {
       <div className="mx-5 mt-4 flex items-center justify-between rounded-2xl border border-white/10 bg-neutral-950/60 px-5 py-4">
         <div className="text-lg">{monthLabel(current)}</div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="rounded-xl border border-white/10 bg-neutral-800/80 p-2 text-gray-300 hover:bg-neutral-700/80"
-            onClick={() => setCurrent(addMonth(current, -1))}
-          >
+          <button type="button" className="rounded-xl border border-white/10 bg-neutral-800/80 p-2 text-gray-300 hover:bg-neutral-700/80" onClick={() => setCurrent(addMonth(current, -1))}>
             <ChevronLeft size={18} />
           </button>
-          <button
-            type="button"
-            className="rounded-xl border border-white/10 bg-neutral-800/80 p-2 text-gray-300 hover:bg-neutral-700/80"
-            onClick={() => setCurrent(addMonth(current, 1))}
-          >
+          <button type="button" className="rounded-xl border border-white/10 bg-neutral-800/80 p-2 text-gray-300 hover:bg-neutral-700/80" onClick={() => setCurrent(addMonth(current, 1))}>
             <ChevronRight size={18} />
           </button>
         </div>
@@ -467,7 +432,7 @@ export default function MonthCalendar() {
       {/* Días */}
       <DaysGrid />
 
-      {/* Leyenda de tipos/colores */}
+      {/* Leyenda */}
       <div className="mt-4 px-4">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-gray-300">
           {(
@@ -480,11 +445,7 @@ export default function MonthCalendar() {
             ] as { key: EventType; label: string }[]
           ).map((item) => (
             <div key={item.key} className="flex items-center gap-2 text-sm">
-              <span
-                className="inline-block h-3.5 w-3.5 rounded-full"
-                style={{ background: TYPE_COLORS[item.key] }}
-                aria-hidden="true"
-              />
+              <span className="inline-block h-3.5 w-3.5 rounded-full" style={{ background: TYPE_COLORS[item.key] }} />
               <span>{item.label}</span>
             </div>
           ))}
@@ -494,42 +455,41 @@ export default function MonthCalendar() {
 
       {/* Modal crear */}
       <Modal open={open} onClose={() => setOpen(false)}>
-        <AddEventForm defaultDate={selectedDate} onSaved={() => { setOpen(false); load(); }} />
+        <AddEventForm
+          defaultDate={selectedDate}
+          onSaved={() => {
+            setOpen(false);
+            load();
+          }}
+        />
       </Modal>
 
-      {/* Modal lista del día (con borrar) */}
+      {/* Modal lista del día (en español) */}
       <Modal
         open={!!listOpenFor}
         onClose={() => {
           setListOpenFor(null);
-          setConfirmingId(null); // limpiar confirmación al cerrar
+          setConfirmingId(null);
         }}
       >
         <div className="space-y-4">
-          <h3 className="text-xl font-semibold">Einträge am {listOpenFor}</h3>
+          <h3 className="text-xl font-semibold">Entradas del {listOpenFor}</h3>
           <div className="max-h-[55vh] space-y-2 overflow-auto pr-2">
             {(listOpenFor ? (mapped[listOpenFor] || []) : []).map((ev) => (
               <div
                 key={ev.id}
                 className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-white/10 bg-neutral-800/80 p-3"
               >
-                {/* Izquierda (que pueda contraerse) */}
                 <div className="flex min-w-[200px] flex-1 items-start gap-3">
-                  <span
-                    className="mt-1 h-3.5 w-3.5 shrink-0 rounded-full"
-                    style={{ background: TYPE_COLORS[ev.type] }}
-                  />
+                  <span className="mt-1 h-3.5 w-3.5 shrink-0 rounded-full" style={{ background: TYPE_COLORS[ev.type] }} />
                   <div>
                     <div className="font-medium">
                       {ev.title} <span className="text-sm text-gray-300">• {ev.type}</span>
                     </div>
-                    {ev.description && (
-                      <div className="mt-1 whitespace-pre-wrap text-sm text-gray-300">{ev.description}</div>
-                    )}
+                    {ev.description && <div className="mt-1 whitespace-pre-wrap text-sm text-gray-300">{ev.description}</div>}
                   </div>
                 </div>
 
-                {/* Derecha: borrar con confirmación in-app (responsive) */}
                 <div className="ml-0 flex flex-wrap items-center gap-2 sm:ml-4">
                   {confirmingId === ev.id ? (
                     <>
@@ -538,7 +498,7 @@ export default function MonthCalendar() {
                         className="rounded-xl px-2 py-1 text-xs text-gray-200 bg-neutral-700/80 hover:bg-neutral-600/80 sm:px-3 sm:text-sm"
                         onClick={() => setConfirmingId(null)}
                       >
-                        Abbrechen
+                        Cancelar
                       </button>
                       <button
                         type="button"
@@ -549,13 +509,13 @@ export default function MonthCalendar() {
                           await load();
                         }}
                       >
-                        Löschen
+                        Eliminar
                       </button>
                     </>
                   ) : (
                     <button
                       type="button"
-                      aria-label="Eintrag löschen"
+                      aria-label="Eliminar entrada"
                       className="rounded-xl p-2 text-gray-300 hover:bg-white/10"
                       onClick={() => setConfirmingId(ev.id)}
                       title="Eliminar"
@@ -567,7 +527,7 @@ export default function MonthCalendar() {
               </div>
             ))}
             {listOpenFor && (mapped[listOpenFor] || []).length === 0 && (
-              <div className="text-gray-300">Keine Einträge.</div>
+              <div className="text-gray-300">No hay entradas.</div>
             )}
           </div>
         </div>
