@@ -105,7 +105,7 @@ function MiniDatePicker({
     return () => document.removeEventListener("mousedown", onDown, true);
   }, [onClose]);
 
-  // Evitar que aparezca teclado: no hay inputs en el picker, y paramos el foco
+  // Evitar que aparezca teclado en móvil
   const stopAll = (e: React.SyntheticEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -307,9 +307,36 @@ export default function MonthCalendar() {
     const data = await db.range(isoDate(first), isoDate(last));
     setEvents(data);
   }
+
+  // Mini-retry: por si Sheets tarda un poco en reflejar escrituras
+  async function loadWithRetry(tries = 2) {
+    try {
+      await load();
+    } catch {}
+    if (tries > 0) {
+      setTimeout(() => void loadWithRetry(tries - 1), 350);
+    }
+  }
+
   useEffect(() => {
     load();
   }, [current]);
+
+  // 🔁 Refrescar al volver a primer plano / foco (PWA iOS y navegador)
+  useEffect(() => {
+    const onFocus = () => {
+      void load();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void load();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
 
   const mapped = useMemo(() => {
     const m: Record<string, DBEvent[]> = {};
@@ -459,12 +486,12 @@ export default function MonthCalendar() {
           defaultDate={selectedDate}
           onSaved={() => {
             setOpen(false);
-            load();
+            void loadWithRetry(); // refresco inmediato + retry
           }}
         />
       </Modal>
 
-      {/* Modal lista del día (en español) */}
+      {/* Modal lista del día (con borrar) */}
       <Modal
         open={!!listOpenFor}
         onClose={() => {
@@ -506,7 +533,7 @@ export default function MonthCalendar() {
                         onClick={async () => {
                           await db.delete(ev.id);
                           setConfirmingId(null);
-                          await load();
+                          void loadWithRetry(); // refresco inmediato + retry
                         }}
                       >
                         Löschen
@@ -527,7 +554,7 @@ export default function MonthCalendar() {
               </div>
             ))}
             {listOpenFor && (mapped[listOpenFor] || []).length === 0 && (
-              <div className="text-gray-300">No hay entradas.</div>
+              <div className="text-gray-300">Keine Einträge.</div>
             )}
           </div>
         </div>
