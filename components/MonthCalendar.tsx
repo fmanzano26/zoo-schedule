@@ -393,7 +393,15 @@ export default function MonthCalendar() {
             );
           })()}
 
-          <button type="button" onClick={() => setListOpenFor(dateStr)} className="absolute inset-0" title="Ver eventos del día" />
+          <button
+  onClick={() => {
+    setSelectedDate(dateObj); // fecha del día pulsado
+    setOpen(true);            // abre el formulario de nueva entrada
+  }}
+  className="absolute inset-0"
+  title="Neuer Eintrag"
+ />
+
         </div>,
       );
     }
