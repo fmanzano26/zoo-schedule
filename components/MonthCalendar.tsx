@@ -550,7 +550,7 @@ export default function MonthCalendar() {
               </div>
             ))}
             {listOpenFor && (mapped[listOpenFor] || []).length === 0 && (
-              <div className="text-gray-300">No hay entradas.</div>
+              <div className="text-gray-300">Keine Einträge.</div>
             )}
           </div>
         </div>
