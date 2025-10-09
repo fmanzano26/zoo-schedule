@@ -1,7 +1,25 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 :root { color-scheme: dark; }
-html, body { @apply bg-neutral-950 text-gray-100; }
+
+/* Fondo y altura coherentes con la barra de estado de iOS */
+html, body {
+  /* Tus clases siguen aplicando; reforzamos el color exacto del status bar */
+  @apply bg-neutral-950 text-gray-100;
+  background-color: #0b0f12;  /* mismo que themeColor del layout */
+  min-height: 100%;
+}
+
+/* (Opcional, sin efecto por defecto)
+   Si alguna vista quedara tapada por la notch en modo app web,
+   puedes añadir la clase `safe-area` al <body> para activar el padding. */
+@supports (padding: env(safe-area-inset-top)) {
+  body.safe-area {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Tu contenedor tal cual */
 .container { @apply mx-auto w-full max-w-6xl px-4; }
