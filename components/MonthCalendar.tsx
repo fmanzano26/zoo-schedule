@@ -105,7 +105,7 @@ function MiniDatePicker({
     return () => document.removeEventListener("mousedown", onDown, true);
   }, [onClose]);
 
-  // Evitar que aparezca teclado: no hay inputs en el picker, y paramos el foco
+  // Evitar que aparezca teclado (no inputs aquí)
   const stopAll = (e: React.SyntheticEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -229,9 +229,10 @@ function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: ()
           <label className="mb-1 block text-sm text-gray-300">Datum</label>
           <div className="relative" ref={pickerRef}>
             <div className="flex items-center gap-2">
+              {/* Botón con aspecto de input: no abre teclado */}
               <button
                 type="button"
-                aria-label={`Fecha: ${formatDateCH(new Date(date))}`}
+                aria-label={`Datum: ${formatDateCH(new Date(date))}`}
                 aria-haspopup="dialog"
                 aria-expanded={openPicker}
                 onClick={togglePicker}
@@ -307,25 +308,64 @@ export default function MonthCalendar() {
     setEvents(data);
   }
 
-  // Carga cuando cambia el mes
+  // Carga cuando cambia el mes / al montar
   useEffect(() => {
     load();
   }, [current]);
 
-  // 🔁 Auto-refresh cada 5 s (ajústalo si quieres)
+  // 🔔 Suscripción SSE: conexión única, reconexión con backoff y limpieza segura
   useEffect(() => {
-    const id = setInterval(() => {
-      load();
-    }, 5000); // 3000-5000 es buen rango
-    return () => clearInterval(id);
-  }, [current]);
+    let es: EventSource | null = null;
+    let retryTimer: any = null;
+    let closed = false;
+    let retryDelay = 1500; // backoff inicial
 
-  // 🔔 Refrescar al volver a foco/visibilidad
+    const connect = () => {
+      try {
+        es = new EventSource(`/api/stream?ts=${Date.now()}`);
+
+        es.onopen = () => {
+          // reset del backoff tras conectar
+          retryDelay = 1500;
+        };
+
+        es.onmessage = () => {
+          // cualquier señal ⇒ recarga datos del mes actual
+          load();
+        };
+
+        es.onerror = () => {
+          es?.close();
+          es = null;
+          if (!closed) {
+            clearTimeout(retryTimer);
+            retryTimer = setTimeout(connect, retryDelay);
+            retryDelay = Math.min(retryDelay * 2, 15000); // backoff limitado
+          }
+        };
+      } catch {
+        if (!closed) {
+          clearTimeout(retryTimer);
+          retryTimer = setTimeout(connect, retryDelay);
+          retryDelay = Math.min(retryDelay * 2, 15000);
+        }
+      }
+    };
+
+    connect();
+
+    return () => {
+      closed = true;
+      clearTimeout(retryTimer);
+      es?.close();
+      es = null;
+    };
+  }, []); // 👈 conexión SSE única (no depende de `current`)
+
+  // Refrescar al volver a foco/visibilidad
   useEffect(() => {
     const onFocus = () => load();
-    const onVisible = () => {
-      if (document.visibilityState === "visible") load();
-    };
+    const onVisible = () => document.visibilityState === "visible" && load();
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisible);
     return () => {
@@ -363,7 +403,7 @@ export default function MonthCalendar() {
         >
           <div className="absolute left-3 top-1.5 text-sm text-gray-300">{d}</div>
 
-          {/* Indicadores centrados, con wrap y contador +N */}
+          {/* Indicadores centrados con wrap y contador +N */}
           {(() => {
             const MAX_DOTS = 8;
             const dots = dayEvents.slice(0, MAX_DOTS);
@@ -396,7 +436,7 @@ export default function MonthCalendar() {
               }
             }}
             className="absolute inset-0"
-            title="Abrir"
+            title="Öffnen"
           />
         </div>,
       );
@@ -538,10 +578,10 @@ export default function MonthCalendar() {
                   ) : (
                     <button
                       type="button"
-                      aria-label="Eliminar entrada"
+                      aria-label="Eintrag löschen"
                       className="rounded-xl p-2 text-gray-300 hover:bg-white/10"
                       onClick={() => setConfirmingId(ev.id)}
-                      title="Eliminar"
+                      title="Löschen"
                     >
                       <Trash2 size={18} />
                     </button>

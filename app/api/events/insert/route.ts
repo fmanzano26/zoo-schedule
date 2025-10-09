@@ -2,17 +2,18 @@
 import { NextResponse } from "next/server";
 import { insertEvent } from "@/lib/gsheets";
 import type { EventType } from "@/lib/db";
+import sseBus from "@/lib/sse-bus";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 export const revalidate = 0;
-export const fetchCache = "force-no-store";
-// export const runtime = "nodejs"; // opcional
 
+// util cabeceras no-cache
 function noCache(status = 200): ResponseInit {
   return {
     status,
     headers: {
-      "Cache-Control": "no-store, max-age=0, must-revalidate",
+      "Cache-Control": "no-store, no-cache, must-revalidate",
       Pragma: "no-cache",
       Expires: "0",
     },
@@ -25,22 +26,22 @@ const TYPES: readonly EventType[] = [
   "Wartung",
   "Reparatur",
   "Sonstiges",
-] as const;
+];
 
 function isEventType(v: unknown): v is EventType {
   return typeof v === "string" && (TYPES as readonly string[]).includes(v);
 }
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/; // YYYY-MM-DD
+const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/; // YYYY-MM-DD
 
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) ?? {};
-    let title = typeof body.title === "string" ? body.title.trim() : "";
-    const date = typeof body.date === "string" ? body.date.trim() : "";
-    const type = body.type as unknown;
+    const body = await req.json();
+    const title = typeof body?.title === "string" ? body.title.trim() : "";
+    const date  = typeof body?.date  === "string" ? body.date.trim()  : "";
+    const type  = body?.type;
     const description =
-      typeof body.description === "string" ? body.description : "";
+      typeof body?.description === "string" ? body.description : "";
 
     if (!title || !date || !type) {
       return NextResponse.json(
@@ -63,7 +64,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // título mínimo 2 chars (igual que en el front)
     if (title.length < 2) {
       return NextResponse.json(
         { error: "title is too short" },
@@ -78,19 +78,19 @@ export async function POST(req: Request) {
       title,
       date,
       type,
-      description: description ?? "",
+      description,
     });
+
+    // notificar a los clientes conectados (SSE)
+    sseBus.emit();
 
     return NextResponse.json(saved, noCache(200));
   } catch (err: any) {
-    return NextResponse.json(
-      { error: err?.message ?? "error" },
-      noCache(500),
-    );
+    return NextResponse.json({ error: err?.message ?? "error" }, noCache(500));
   }
 }
 
 // Preflight (opcional)
 export async function OPTIONS() {
-  return new NextResponse(null, noCache(204));
+  return NextResponse.json(null, noCache(204));
 }

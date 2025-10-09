@@ -15,6 +15,14 @@ export type DBEvent = {
   created_at: string;
 };
 
+export const EVENT_TYPES = [
+  "Reservierung",
+  "Veranstaltung",
+  "Wartung",
+  "Reparatur",
+  "Sonstiges",
+] as const;
+
 export const TYPE_COLORS: Record<EventType, string> = {
   Reservierung: "#22c55e",
   Veranstaltung: "#38bdf8",
@@ -23,9 +31,11 @@ export const TYPE_COLORS: Record<EventType, string> = {
   Sonstiges: "#f472b6",
 };
 
-// ---- Base URL absoluta (necesario para A2HS/iOS) ----
+// ---- Base URL absoluta (A2HS/iOS-friendly) ----
+// Prioriza env para forzar dominio absoluto en PWA/A2HS.
+// En navegación normal, window.location.origin es suficiente.
 const BASE_URL =
-  (typeof process !== "undefined" && process.env.NEXT_PUBLIC_SITE_URL) ??
+  (typeof process !== "undefined" && process.env.NEXT_PUBLIC_SITE_URL) ||
   (typeof window !== "undefined" ? window.location.origin : "");
 
 const ORIGIN = (BASE_URL || "").replace(/\/$/, "");
@@ -33,36 +43,59 @@ const ORIGIN = (BASE_URL || "").replace(/\/$/, "");
 // Normaliza a URL absoluta
 function toAbs(path: string) {
   if (/^https?:\/\//i.test(path)) return path;
+  if (!ORIGIN) {
+    throw new Error(
+      "[db] ORIGIN vacío. Define NEXT_PUBLIC_SITE_URL o llama desde el navegador."
+    );
+  }
   return `${ORIGIN}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-// ---- Helper fetch con no-cache + cache buster ----
-async function api<T>(url: string, init?: RequestInit): Promise<T> {
+// ---- Helper fetch con no-cache + cache buster + timeout ----
+type ApiInit = RequestInit & { timeoutMs?: number };
+
+async function api<T>(url: string, init?: ApiInit): Promise<T> {
+  const { timeoutMs = 12000, ...rest } = init ?? {};
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), timeoutMs);
+
+  // Evita caches intermedias
   const sep = url.includes("?") ? "&" : "?";
   const busted = `${url}${sep}t=${Date.now()}`;
 
-  const res = await fetch(busted, {
-    cache: "no-store",
-    ...init,
-    headers: {
-      "content-type": "application/json",
-      "cache-control": "no-store, max-age=0",
-      pragma: "no-cache",
-      ...(init?.headers ?? {}),
-    },
-  });
+  try {
+    const res = await fetch(busted, {
+      cache: "no-store",
+      ...rest,
+      headers: {
+        "content-type": "application/json",
+        "cache-control": "no-store, max-age=0",
+        pragma: "no-cache",
+        ...(rest.headers ?? {}),
+      },
+      signal: controller.signal,
+    });
 
-  if (!res.ok) {
-    let msg = `${res.status} ${res.statusText}`;
-    try {
-      const j = await res.json();
-      if (j?.error) msg = j.error;
-    } catch {
-      // ignore json parse
+    if (!res.ok) {
+      let msg = `${res.status} ${res.statusText}`;
+      try {
+        const j = await res.json().catch(() => null);
+        if (j) {
+          msg = j.error || j.message || msg;
+        }
+      } catch {
+        // ignore
+      }
+      throw new Error(msg);
     }
-    throw new Error(msg);
+
+    // Algunas rutas devuelven vacío (204/void)
+    const text = await res.text();
+    if (!text) return undefined as unknown as T;
+    return JSON.parse(text) as T;
+  } finally {
+    clearTimeout(t);
   }
-  return (await res.json()) as T;
 }
 
 // ---- API pública usada por la UI ----
