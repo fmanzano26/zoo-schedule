@@ -3,12 +3,13 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, Plus, CalendarDays, Trash2, Pencil } from "lucide-react";
 import { db, TYPE_COLORS, type EventType, type DBEvent } from "@/lib/db";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 /* ================== Utilidades de fecha ================== */
 function isoDate(d: Date) {
   const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
+  const m = String(d.getMonth() + 1,).padStart(2,"0");
+  const day = String(d.getDate()).padStart(2,"0");
   return `${y}-${m}-${day}`;
 }
 function monthLabel(d: Date, locale = "de-CH") {
@@ -24,8 +25,7 @@ function monthMatrix(current: Date) {
   const startDow = (start.getDay() + 6) % 7; // lunes=0
   const cells: (Date | null)[] = [];
   for (let i = 0; i < startDow; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++)
-    cells.push(new Date(current.getFullYear(), current.getMonth(), d));
+  for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(current.getFullYear(), current.getMonth(), d));
   while (cells.length % 7 !== 0) cells.push(null);
   while (cells.length < 42) cells.push(null);
   const weeks: (Date | null)[][] = [];
@@ -398,6 +398,10 @@ export default function MonthCalendar() {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [editing, setEditing] = useState<DBEvent | null>(null);
 
+  // Dirección del slide (-1: anterior, +1: siguiente)
+  const [dir, setDir] = useState(0);
+  const prefersReduced = useReducedMotion();
+
   // 👇 refs/handlers para gesto táctil (swipe de mes)
   const startTouch = useRef<{ x: number; y: number } | null>(null);
   function onTouchStart(e: React.TouchEvent) {
@@ -412,8 +416,8 @@ export default function MonthCalendar() {
     const dy = t.clientY - st.y;
     const THRESHOLD = 50; // px
     if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > THRESHOLD) {
-      if (dx < 0) setCurrent(addMonth(current, 1));    // ← swipe izquierda: siguiente mes
-      else        setCurrent(addMonth(current, -1));   // → swipe derecha: mes anterior
+      if (dx < 0) { setDir(+1); setCurrent(addMonth(current, 1)); }    // izquierda -> siguiente
+      else        { setDir(-1); setCurrent(addMonth(current, -1)); }   // derecha  -> anterior
     }
     startTouch.current = null;
   }
@@ -480,6 +484,8 @@ export default function MonthCalendar() {
     const month = current.getMonth();
     const first = new Date(year, month, 1);
     const daysInMonth = new Date(year, month + 1, 0).getDate();
+    the: // (dummy label to avoid accidental TS highlight)
+    {};
     const startDow = (first.getDay() + 6) % 7;
     const colStartMap = ["col-start-1","col-start-2","col-start-3","col-start-4","col-start-5","col-start-6","col-start-7"];
     const items: JSX.Element[] = [];
@@ -544,24 +550,47 @@ export default function MonthCalendar() {
       <div className="mx-5 mt-4 flex items-center justify-between rounded-2xl border border-white/10 bg-neutral-950/60 px-5 py-4">
         <div className="text-lg">{monthLabel(current)}</div>
         <div className="flex items-center gap-2">
-          <button type="button" className="rounded-xl border border-white/10 bg-neutral-800/80 p-2 text-gray-300 hover:bg-neutral-700/80" onClick={() => setCurrent(addMonth(current, -1))}>
+          <button
+            type="button"
+            className="rounded-xl border border-white/10 bg-neutral-800/80 p-2 text-gray-300 hover:bg-neutral-700/80"
+            onClick={() => { setDir(-1); setCurrent(addMonth(current, -1)); }}
+          >
             <ChevronLeft size={18} />
           </button>
-          <button type="button" className="rounded-xl border border-white/10 bg-neutral-800/80 p-2 text-gray-300 hover:bg-neutral-700/80" onClick={() => setCurrent(addMonth(current, 1))}>
+          <button
+            type="button"
+            className="rounded-xl border border-white/10 bg-neutral-800/80 p-2 text-gray-300 hover:bg-neutral-700/80"
+            onClick={() => { setDir(+1); setCurrent(addMonth(current, 1)); }}
+          >
             <ChevronRight size={18} />
           </button>
         </div>
       </div>
 
-      {/* Contenedor con gesto táctil (no rompe el scroll) */}
+      {/* Contenedor con gesto táctil + animación de cambio de mes */}
       <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} style={{ touchAction: "pan-y" }}>
-        <div className="px-4 pb-2 pt-3">
-          <div className="grid grid-cols-7 gap-2 px-2 text-center text-sm text-gray-300">
-            {["Mo","Di","Mi","Do","Fr","Sa","So"].map((d) => (<div key={d} className="py-2">{d}</div>))}
-          </div>
-        </div>
+        <div className="relative overflow-hidden">
+          <AnimatePresence initial={false} custom={dir} mode="popLayout">
+            <motion.div
+              key={`${current.getFullYear()}-${current.getMonth()}`}
+              custom={dir}
+              initial={{ x: prefersReduced ? 0 : (dir > 0 ? 80 : -80), opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: prefersReduced ? 0 : (dir > 0 ? -80 : 80), opacity: 0 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+            >
+              {/* Cabeceras de días */}
+              <div className="px-4 pb-2 pt-3">
+                <div className="grid grid-cols-7 gap-2 px-2 text-center text-sm text-gray-300">
+                  {["Mo","Di","Mi","Do","Fr","Sa","So"].map((d) => (<div key={d} className="py-2">{d}</div>))}
+                </div>
+              </div>
 
-        <DaysGrid />
+              {/* Días */}
+              <DaysGrid />
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
 
       <div className="mt-4 px-4">
