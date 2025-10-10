@@ -6,7 +6,7 @@ export const metadata = {
 
 // ✅ iOS usa toda la altura (incluida la notch) y el mismo color que el fondo
 export const viewport = {
-  themeColor: "#0b0f12",
+  themeColor: "#000000",
   viewportFit: "cover" as const,
 };
 
