@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ChevronLeft, ChevronRight, Plus, CalendarDays, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, CalendarDays, Trash2, Pencil } from "lucide-react";
 import { db, TYPE_COLORS, type EventType, type DBEvent } from "@/lib/db";
 
 /* ================== Utilidades de fecha ================== */
@@ -292,6 +292,124 @@ function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: ()
   );
 }
 
+/* ================== Formulario de edición ================== */
+function EditEventForm({
+  event,
+  onSaved,
+  onCancel,
+}: {
+  event: DBEvent;
+  onSaved: () => void;
+  onCancel: () => void;
+}) {
+  const [title, setTitle] = useState(event.title);
+  const [date, setDate] = useState(event.date);
+  const [type, setType] = useState<EventType>(event.type);
+  const [desc, setDesc] = useState(event.description ?? "");
+  const [openPicker, setOpenPicker] = useState(false);
+  const pickerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!openPicker) return;
+    function onDown(e: MouseEvent) {
+      const el = pickerRef.current;
+      if (el && !el.contains(e.target as Node)) setOpenPicker(false);
+    }
+    document.addEventListener("mousedown", onDown, true);
+    return () => document.removeEventListener("mousedown", onDown, true);
+  }, [openPicker]);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (title.trim().length < 2) return;
+    await db.update({ id: event.id, title, date, type, description: desc });
+    onSaved();
+  }
+
+  const inputCls =
+    "w-full rounded-xl bg-neutral-800/80 px-4 py-3 outline-none ring-violet-500/60 focus:ring-2 text-gray-100 placeholder-gray-400";
+
+  return (
+    <form onSubmit={save} className="space-y-5 text-gray-100">
+      <h3 className="mb-2 text-xl font-semibold">Eintrag bearbeiten</h3>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div>
+          <label className="mb-1 block text-sm text-gray-300">Titel</label>
+          <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} required minLength={2} />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm text-gray-300">Typ</label>
+          <select className={inputCls} value={type} onChange={(e) => setType(e.target.value as EventType)}>
+            {(["Reservierung", "Veranstaltung", "Wartung", "Reparatur", "Sonstiges"] as EventType[]).map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm text-gray-300">Datum</label>
+          <div className="relative" ref={pickerRef}>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setOpenPicker((v) => !v)}
+                className={inputCls + " font-medium text-left"}
+              >
+                {formatDateCH(new Date(date))}
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpenPicker((v) => !v)}
+                className="h-[46px] min-w-[46px] rounded-xl border border-white/10 bg-neutral-800/80 p-2 text-gray-200 hover:bg-neutral-700/80"
+              >
+                <CalendarDays size={18} />
+              </button>
+            </div>
+            {openPicker && (
+              <MiniDatePicker
+                value={new Date(date)}
+                onChange={(d) => setDate(isoDate(d))}
+                onClose={() => setOpenPicker(false)}
+              />
+            )}
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm text-gray-300">Farbe (automatisch)</label>
+          <div className="flex h-[46px] items-center gap-3 rounded-xl bg-neutral-800/80 px-3">
+            <span className="h-3.5 w-3.5 rounded-full" style={{ background: TYPE_COLORS[type] }} />
+            <span className="text-sm text-gray-300">durch Typ festgelegt</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm text-gray-300">Beschreibung</label>
+        <textarea className={inputCls + " min-h-[120px]"} value={desc} onChange={(e) => setDesc(e.target.value)} />
+      </div>
+
+      <div className="flex items-center justify-end gap-3">
+        <button
+          type="button"
+          className="rounded-2xl border border-white/10 bg-neutral-800/80 px-4 py-2 text-gray-200 hover:bg-neutral-700/80"
+          onClick={onCancel}
+        >
+          Abbrechen
+        </button>
+        <button
+          type="submit"
+          className="rounded-2xl bg-violet-600 px-4 py-2 font-medium text-white shadow-lg shadow-violet-700/30 hover:brightness-110"
+        >
+          Speichern
+        </button>
+      </div>
+    </form>
+  );
+}
+
 /* ================== Calendario mensual ================== */
 export default function MonthCalendar() {
   const [current, setCurrent] = useState(new Date());
@@ -300,6 +418,7 @@ export default function MonthCalendar() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [listOpenFor, setListOpenFor] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<DBEvent | null>(null);
 
   async function load() {
     const first = new Date(current.getFullYear(), current.getMonth(), 1);
@@ -554,6 +673,18 @@ export default function MonthCalendar() {
                 </div>
 
                 <div className="ml-0 flex flex-wrap items-center gap-2 sm:ml-4">
+                  {/* ✏️ Editar */}
+                  <button
+                    type="button"
+                    aria-label="Eintrag bearbeiten"
+                    className="rounded-xl p-2 text-gray-300 hover:bg-white/10"
+                    onClick={() => setEditing(ev)}
+                    title="Bearbeiten"
+                  >
+                    <Pencil size={18} />
+                  </button>
+
+                  {/* 🗑️ Borrar */}
                   {confirmingId === ev.id ? (
                     <>
                       <button
@@ -594,6 +725,20 @@ export default function MonthCalendar() {
             )}
           </div>
         </div>
+      </Modal>
+
+      {/* Modal editar */}
+      <Modal open={!!editing} onClose={() => setEditing(null)}>
+        {editing && (
+          <EditEventForm
+            event={editing}
+            onSaved={async () => {
+              setEditing(null);
+              await load();
+            }}
+            onCancel={() => setEditing(null)}
+          />
+        )}
       </Modal>
 
       {/* Footer */}

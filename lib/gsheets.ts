@@ -16,7 +16,10 @@ if (!CLIENT_EMAIL || !PRIVATE_KEY_RAW || !SPREADSHEET_ID) {
 
 // La clave privada llega con \n escapadas
 const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n");
-const SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly", "https://www.googleapis.com/auth/spreadsheets"];
+const SCOPES = [
+  "https://www.googleapis.com/auth/spreadsheets.readonly",
+  "https://www.googleapis.com/auth/spreadsheets",
+];
 
 type SheetsClient = ReturnType<typeof google.sheets>;
 
@@ -138,4 +141,60 @@ export async function deleteEventById(id: string): Promise<boolean> {
   });
 
   return true;
+}
+
+/* ========= Actualización ========= */
+export async function updateEventById(ev: {
+  id: string;
+  title: string;
+  date: string; // YYYY-MM-DD
+  type: string;
+  description?: string;
+}): Promise<GSEvent | null> {
+  const sheets = getSheetsClient();
+
+  // 1) localizar la fila (igual que en delete)
+  const idsResp = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID!,
+    range: `${SHEET_NAME}!A2:A`,
+  });
+  const ids = (idsResp.data.values ?? []).map((r) => r[0]);
+  const idx = ids.findIndex((v) => v === ev.id);
+  if (idx === -1) return null;
+
+  const rowIndex = idx + 2;
+
+  // 2) obtener la fila actual para preservar created_at si existe
+  const rowResp = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID!,
+    range: `${SHEET_NAME}!A${rowIndex}:F${rowIndex}`,
+  });
+  const current = (rowResp.data.values?.[0] ?? []) as string[];
+  const currentCreatedAt = current[5] || new Date().toISOString();
+
+  // 3) actualizar la fila completa (A..F)
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID!,
+    range: `${SHEET_NAME}!A${rowIndex}:F${rowIndex}`,
+    valueInputOption: "RAW",
+    requestBody: {
+      values: [[
+        ev.id,
+        ev.title,
+        ev.date,
+        ev.type,
+        ev.description ?? "",
+        currentCreatedAt, // preservamos timestamp original
+      ]],
+    },
+  });
+
+  return {
+    id: ev.id,
+    title: ev.title,
+    date: ev.date,
+    type: ev.type,
+    description: ev.description ?? "",
+    created_at: currentCreatedAt,
+  };
 }

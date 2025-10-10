@@ -15,14 +15,6 @@ export type DBEvent = {
   created_at: string;
 };
 
-export const EVENT_TYPES = [
-  "Reservierung",
-  "Veranstaltung",
-  "Wartung",
-  "Reparatur",
-  "Sonstiges",
-] as const;
-
 export const TYPE_COLORS: Record<EventType, string> = {
   Reservierung: "#22c55e",
   Veranstaltung: "#38bdf8",
@@ -31,16 +23,13 @@ export const TYPE_COLORS: Record<EventType, string> = {
   Sonstiges: "#f472b6",
 };
 
-// ---- Base URL absoluta (A2HS/iOS-friendly) ----
-// Prioriza env para forzar dominio absoluto en PWA/A2HS.
-// En navegación normal, window.location.origin es suficiente.
+// ---- Base URL absoluta (A2HS/iOS) ----
 const BASE_URL =
   (typeof process !== "undefined" && process.env.NEXT_PUBLIC_SITE_URL) ||
   (typeof window !== "undefined" ? window.location.origin : "");
 
 const ORIGIN = (BASE_URL || "").replace(/\/$/, "");
 
-// Normaliza a URL absoluta
 function toAbs(path: string) {
   if (/^https?:\/\//i.test(path)) return path;
   if (!ORIGIN) {
@@ -51,7 +40,7 @@ function toAbs(path: string) {
   return `${ORIGIN}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-// ---- Helper fetch con no-cache + cache buster + timeout ----
+// ---- Helper fetch (no-cache + timeout) ----
 type ApiInit = RequestInit & { timeoutMs?: number };
 
 async function api<T>(url: string, init?: ApiInit): Promise<T> {
@@ -59,7 +48,6 @@ async function api<T>(url: string, init?: ApiInit): Promise<T> {
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), timeoutMs);
 
-  // Evita caches intermedias
   const sep = url.includes("?") ? "&" : "?";
   const busted = `${url}${sep}t=${Date.now()}`;
 
@@ -80,16 +68,11 @@ async function api<T>(url: string, init?: ApiInit): Promise<T> {
       let msg = `${res.status} ${res.statusText}`;
       try {
         const j = await res.json().catch(() => null);
-        if (j) {
-          msg = j.error || j.message || msg;
-        }
-      } catch {
-        // ignore
-      }
+        if (j) msg = j.error || j.message || msg;
+      } catch {}
       throw new Error(msg);
     }
 
-    // Algunas rutas devuelven vacío (204/void)
     const text = await res.text();
     if (!text) return undefined as unknown as T;
     return JSON.parse(text) as T;
@@ -98,7 +81,7 @@ async function api<T>(url: string, init?: ApiInit): Promise<T> {
   }
 }
 
-// ---- API pública usada por la UI ----
+// ---- API usada por la UI ----
 export const db = {
   async range(fromISO: string, toISO: string): Promise<DBEvent[]> {
     const qs = new URLSearchParams({ from: fromISO, to: toISO }).toString();
@@ -109,6 +92,20 @@ export const db = {
     ev: Pick<DBEvent, "title" | "date" | "type" | "description">
   ): Promise<DBEvent> {
     return api<DBEvent>(toAbs("/api/events/insert"), {
+      method: "POST",
+      body: JSON.stringify(ev),
+    });
+  },
+
+  // ✅ NUEVO: actualizar evento por id
+  async update(ev: {
+    id: string;
+    title: string;
+    date: string;
+    type: EventType;
+    description?: string | null;
+  }): Promise<DBEvent> {
+    return api<DBEvent>(toAbs("/api/events/update"), {
       method: "POST",
       body: JSON.stringify(ev),
     });
