@@ -22,14 +22,12 @@ function monthMatrix(current: Date) {
   const end = new Date(current.getFullYear(), current.getMonth() + 1, 0);
   const daysInMonth = end.getDate();
   const startDow = (start.getDay() + 6) % 7; // lunes=0
-
   const cells: (Date | null)[] = [];
   for (let i = 0; i < startDow; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++)
     cells.push(new Date(current.getFullYear(), current.getMonth(), d));
   while (cells.length % 7 !== 0) cells.push(null);
   while (cells.length < 42) cells.push(null);
-
   const weeks: (Date | null)[][] = [];
   for (let i = 0; i < 6; i++) weeks.push(cells.slice(i * 7, i * 7 + 7));
   return weeks;
@@ -82,20 +80,11 @@ function MiniDatePicker({
 }) {
   const [view, setView] = useState(new Date(value.getFullYear(), value.getMonth(), 1));
   const weeks = monthMatrix(view);
-
-  function prev() {
-    setView(new Date(view.getFullYear(), view.getMonth() - 1, 1));
-  }
-  function next() {
-    setView(new Date(view.getFullYear(), view.getMonth() + 1, 1));
-  }
-  function select(d: Date) {
-    onChange(d);
-    onClose();
-  }
+  function prev() { setView(new Date(view.getFullYear(), view.getMonth() - 1, 1)); }
+  function next() { setView(new Date(view.getFullYear(), view.getMonth() + 1, 1)); }
+  function select(d: Date) { onChange(d); onClose(); }
 
   const popRef = useRef<HTMLDivElement | null>(null);
-
   useEffect(() => {
     function onDown(e: MouseEvent) {
       const el = popRef.current;
@@ -105,11 +94,7 @@ function MiniDatePicker({
     return () => document.removeEventListener("mousedown", onDown, true);
   }, [onClose]);
 
-  // Evitar que aparezca teclado (no inputs aquí)
-  const stopAll = (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
+  const stopAll = (e: React.SyntheticEvent) => { e.preventDefault(); e.stopPropagation(); };
 
   return (
     <div
@@ -130,9 +115,7 @@ function MiniDatePicker({
 
       <div className="mb-1 grid grid-cols-7 gap-1 text-center text-xs text-gray-400">
         {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((d) => (
-          <div key={d} className="py-1">
-            {d}
-          </div>
+          <div key={d} className="py-1">{d}</div>
         ))}
       </div>
 
@@ -145,9 +128,7 @@ function MiniDatePicker({
               d.getDate() === value.getDate() &&
               d.getMonth() === value.getMonth() &&
               d.getFullYear() === value.getFullYear();
-
             if (isEmpty) return <div key={`${ri}-${ci}`} className="h-8" />;
-
             return (
               <button
                 type="button"
@@ -218,9 +199,7 @@ function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: ()
           <label className="mb-1 block text-sm text-gray-300">Typ</label>
           <select className={inputCls} value={type} onChange={(e) => setType(e.target.value as EventType)}>
             {(["Reservierung", "Veranstaltung", "Wartung", "Reparatur", "Sonstiges"] as EventType[]).map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
+              <option key={opt} value={opt}>{opt}</option>
             ))}
           </select>
         </div>
@@ -229,7 +208,6 @@ function AddEventForm({ defaultDate, onSaved }: { defaultDate: Date; onSaved: ()
           <label className="mb-1 block text-sm text-gray-300">Datum</label>
           <div className="relative" ref={pickerRef}>
             <div className="flex items-center gap-2">
-              {/* Botón con aspecto de input: no abre teclado */}
               <button
                 type="button"
                 aria-label={`Datum: ${formatDateCH(new Date(date))}`}
@@ -427,39 +405,25 @@ export default function MonthCalendar() {
     setEvents(data);
   }
 
-  // Carga cuando cambia el mes / al montar
-  useEffect(() => {
-    load();
-  }, [current]);
+  useEffect(() => { load(); }, [current]);
 
-  // 🔔 Suscripción SSE: conexión única, reconexión con backoff y limpieza segura
+  // SSE conexión única con backoff
   useEffect(() => {
     let es: EventSource | null = null;
     let retryTimer: any = null;
     let closed = false;
-    let retryDelay = 1500; // backoff inicial
-
+    let retryDelay = 1500;
     const connect = () => {
       try {
         es = new EventSource(`/api/stream?ts=${Date.now()}`);
-
-        es.onopen = () => {
-          // reset del backoff tras conectar
-          retryDelay = 1500;
-        };
-
-        es.onmessage = () => {
-          // cualquier señal ⇒ recarga datos del mes actual
-          load();
-        };
-
+        es.onopen = () => { retryDelay = 1500; };
+        es.onmessage = () => { load(); };
         es.onerror = () => {
-          es?.close();
-          es = null;
+          es?.close(); es = null;
           if (!closed) {
             clearTimeout(retryTimer);
             retryTimer = setTimeout(connect, retryDelay);
-            retryDelay = Math.min(retryDelay * 2, 15000); // backoff limitado
+            retryDelay = Math.min(retryDelay * 2, 15000);
           }
         };
       } catch {
@@ -470,18 +434,10 @@ export default function MonthCalendar() {
         }
       }
     };
-
     connect();
+    return () => { closed = true; clearTimeout(retryTimer); es?.close(); es = null; };
+  }, []);
 
-    return () => {
-      closed = true;
-      clearTimeout(retryTimer);
-      es?.close();
-      es = null;
-    };
-  }, []); // 👈 conexión SSE única (no depende de `current`)
-
-  // Refrescar al volver a foco/visibilidad
   useEffect(() => {
     const onFocus = () => load();
     const onVisible = () => document.visibilityState === "visible" && load();
@@ -505,8 +461,7 @@ export default function MonthCalendar() {
     const first = new Date(year, month, 1);
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const startDow = (first.getDay() + 6) % 7;
-    const colStartMap = ["col-start-1", "col-start-2", "col-start-3", "col-start-4", "col-start-5", "col-start-6", "col-start-7"];
-
+    const colStartMap = ["col-start-1","col-start-2","col-start-3","col-start-4","col-start-5","col-start-6","col-start-7"];
     const items: JSX.Element[] = [];
     for (let d = 1; d <= daysInMonth; d++) {
       const dateObj = new Date(year, month, d);
@@ -514,26 +469,19 @@ export default function MonthCalendar() {
       const dayEvents = mapped[dateStr] || [];
       const isFirst = d === 1;
       const colStart = isFirst ? colStartMap[startDow] : "";
-
       items.push(
         <div
           key={d}
           className={`relative h-12 sm:h-14 md:h-16 rounded-2xl overflow-hidden border border-white/10 bg-neutral-900/80 transition-colors hover:bg-neutral-800/80 ${colStart}`}
         >
           <div className="absolute left-3 top-1.5 text-sm text-gray-300">{d}</div>
-
-          {/* Indicadores centrados con wrap y contador +N */}
           {(() => {
             const MAX_DOTS = 8;
             const dots = dayEvents.slice(0, MAX_DOTS);
             return (
               <div className="pointer-events-none absolute bottom-1 left-1/2 -translate-x-1/2 w-[calc(100%-16px)] flex flex-wrap justify-center content-center gap-1">
                 {dots.map((ev, idx) => (
-                  <span
-                    key={ev.id + idx}
-                    className="h-1.5 w-1.5 md:h-2 md:w-2 rounded-full"
-                    style={{ background: TYPE_COLORS[ev.type] }}
-                  />
+                  <span key={ev.id + idx} className="h-1.5 w-1.5 md:h-2 md:w-2 rounded-full" style={{ background: TYPE_COLORS[ev.type] }} />
                 ))}
                 {dayEvents.length > MAX_DOTS && (
                   <span className="rounded-full bg-neutral-700/80 px-1 text-[9px] leading-4 text-gray-200 md:px-1.5 md:text-[10px]">
@@ -543,16 +491,10 @@ export default function MonthCalendar() {
               </div>
             );
           })()}
-
-          {/* CLICK: si hay eventos → lista; si no → nuevo */}
           <button
             onClick={() => {
-              if (dayEvents.length > 0) {
-                setListOpenFor(dateStr);
-              } else {
-                setSelectedDate(dateObj);
-                setOpen(true);
-              }
+              if (dayEvents.length > 0) setListOpenFor(isoDate(dateObj));
+              else { setSelectedDate(dateObj); setOpen(true); }
             }}
             className="absolute inset-0"
             title="Öffnen"
@@ -565,21 +507,13 @@ export default function MonthCalendar() {
 
   return (
     <div className="text-gray-100">
-      {/* Título */}
       <div className="px-5 pt-6">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-cyan-300 drop-shadow-[0_0_16px_rgba(125,243,255,0.55)]">
-          Zoo Schedule
-        </h1>
-
-        {/* Botón NUEVO */}
+        <h1 className="text-4xl md:text-5xl font-extrabold text-cyan-300 drop-shadow-[0_0_16px_rgba(125,243,255,0.55)]">Zoo Schedule</h1>
         <div className="mt-4 flex justify-start md:justify-end">
           <button
             type="button"
             aria-label="Neuer Eintrag"
-            onClick={() => {
-              setSelectedDate(new Date());
-              setOpen(true);
-            }}
+            onClick={() => { setSelectedDate(new Date()); setOpen(true); }}
             className="inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-4 py-2 text-base font-medium text-white shadow-lg shadow-violet-700/30 hover:brightness-110"
           >
             <Plus size={18} /> Neuer Eintrag
@@ -587,7 +521,6 @@ export default function MonthCalendar() {
         </div>
       </div>
 
-      {/* Barra de mes */}
       <div className="mx-5 mt-4 flex items-center justify-between rounded-2xl border border-white/10 bg-neutral-950/60 px-5 py-4">
         <div className="text-lg">{monthLabel(current)}</div>
         <div className="flex items-center gap-2">
@@ -600,21 +533,14 @@ export default function MonthCalendar() {
         </div>
       </div>
 
-      {/* Cabeceras de días */}
       <div className="px-4 pb-2 pt-3">
         <div className="grid grid-cols-7 gap-2 px-2 text-center text-sm text-gray-300">
-          {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((d) => (
-            <div key={d} className="py-2">
-              {d}
-            </div>
-          ))}
+          {["Mo","Di","Mi","Do","Fr","Sa","So"].map((d) => (<div key={d} className="py-2">{d}</div>))}
         </div>
       </div>
 
-      {/* Días */}
       <DaysGrid />
 
-      {/* Leyenda */}
       <div className="mt-4 px-4">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-gray-300">
           {(
@@ -635,33 +561,22 @@ export default function MonthCalendar() {
         <div className="mt-4 h-px w-full bg-white/10" />
       </div>
 
-      {/* Modal crear */}
       <Modal open={open} onClose={() => setOpen(false)}>
         <AddEventForm
           defaultDate={selectedDate}
-          onSaved={() => {
-            setOpen(false);
-            load();
-          }}
+          onSaved={() => { setOpen(false); load(); }}
         />
       </Modal>
 
-      {/* Modal lista del día */}
       <Modal
         open={!!listOpenFor}
-        onClose={() => {
-          setListOpenFor(null);
-          setConfirmingId(null);
-        }}
+        onClose={() => { setListOpenFor(null); setConfirmingId(null); }}
       >
         <div className="space-y-4">
           <h3 className="text-xl font-semibold">Einträge am {listOpenFor}</h3>
           <div className="max-h-[55vh] space-y-2 overflow-auto pr-2">
             {(listOpenFor ? (mapped[listOpenFor] || []) : []).map((ev) => (
-              <div
-                key={ev.id}
-                className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-white/10 bg-neutral-800/80 p-3"
-              >
+              <div key={ev.id} className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-white/10 bg-neutral-800/80 p-3">
                 <div className="flex min-w-[200px] flex-1 items-start gap-3">
                   <span className="mt-1 h-3.5 w-3.5 shrink-0 rounded-full" style={{ background: TYPE_COLORS[ev.type] }} />
                   <div>
@@ -673,15 +588,15 @@ export default function MonthCalendar() {
                 </div>
 
                 <div className="ml-0 flex flex-wrap items-center gap-2 sm:ml-4">
-                  {/* ✏️ Editar */}
+                  {/* ✏️ Editar — violeta */}
                   <button
                     type="button"
                     aria-label="Eintrag bearbeiten"
-                    className="rounded-xl p-2 text-gray-300 hover:bg-white/10"
-                    onClick={() => setEditing(ev)}
                     title="Bearbeiten"
+                    className="rounded-xl p-2 text-violet-300 hover:bg-violet-500/15 hover:text-violet-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40"
+                    onClick={() => setEditing(ev)}
                   >
-                    <Pencil size={18} />
+                    <Pencil size={18} className="stroke-current" />
                   </button>
 
                   {/* 🗑️ Borrar */}
@@ -710,11 +625,11 @@ export default function MonthCalendar() {
                     <button
                       type="button"
                       aria-label="Eintrag löschen"
-                      className="rounded-xl p-2 text-gray-300 hover:bg-white/10"
-                      onClick={() => setConfirmingId(ev.id)}
                       title="Löschen"
+                      className="rounded-xl p-2 text-red-400 hover:bg-red-500/15 hover:text-red-300 focus:outline-none focus:ring-2 focus:ring-red-400/40"
+                      onClick={() => setConfirmingId(ev.id)}
                     >
-                      <Trash2 size={18} />
+                      <Trash2 size={18} className="stroke-current" />
                     </button>
                   )}
                 </div>
@@ -727,21 +642,16 @@ export default function MonthCalendar() {
         </div>
       </Modal>
 
-      {/* Modal editar */}
       <Modal open={!!editing} onClose={() => setEditing(null)}>
         {editing && (
           <EditEventForm
             event={editing}
-            onSaved={async () => {
-              setEditing(null);
-              await load();
-            }}
+            onSaved={async () => { setEditing(null); await load(); }}
             onCancel={() => setEditing(null)}
           />
         )}
       </Modal>
 
-      {/* Footer */}
       <footer className="mx-2 mt-8 pb-6 text-center text-sm text-gray-400">
         <span className="italic">Created by Fran Manzano</span> ©2025
       </footer>
