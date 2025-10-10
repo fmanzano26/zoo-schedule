@@ -16,13 +16,13 @@ html, body {
 /* ✅ Solo cuando se abre desde el icono (modo standalone) */
 @media (display-mode: standalone) {
   @supports (padding: env(safe-area-inset-top)) {
-    html, body { padding-top: calc(env(safe-area-inset-top) + 4px) !important; }
+    html, body { padding-top: calc(env(safe-area-inset-top) + 2px) !important; }
   }
 }
 
 /* Compatibilidad con iOS antiguos */
 @supports (padding: constant(safe-area-inset-top)) {
-  html, body { padding-top: calc(constant(safe-area-inset-top) + 4px) !important; }
+  html, body { padding-top: calc(constant(safe-area-inset-top) + 2px) !important; }
 }
 
 /* Tu contenedor tal cual */
