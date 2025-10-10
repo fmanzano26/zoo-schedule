@@ -16,16 +16,16 @@ html, body {
 /* Solo cuando se abre desde el icono (modo standalone) ajustamos la safe-area */
 @media (display-mode: standalone) {
   body.safe-area {
-    /* reduce ligeramente el hueco superior sin romper la notch */
-    padding-top: calc(max(env(safe-area-inset-top) - 8px, 0px));
+    /* añade ligeramente espacio superior sin romper la notch */
+    padding-top: calc(env(safe-area-inset-top) + 8px);
   }
 }
 
-/* Compatibilidad con iOS antiguos (Safari antiguas) */
+/* Compatibilidad con iOS antiguos (Safari antiguos) */
 @supports (padding: constant(safe-area-inset-top)) {
   @media (display-mode: standalone) {
     body.safe-area {
-      padding-top: calc(max(constant(safe-area-inset-top) - 8px, 0px));
+      padding-top: calc(constant(safe-area-inset-top) + 8px);
     }
   }
 }
