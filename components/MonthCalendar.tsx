@@ -398,6 +398,26 @@ export default function MonthCalendar() {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [editing, setEditing] = useState<DBEvent | null>(null);
 
+  // 👇 refs/handlers para gesto táctil (swipe de mes)
+  const startTouch = useRef<{ x: number; y: number } | null>(null);
+  function onTouchStart(e: React.TouchEvent) {
+    const t = e.changedTouches[0];
+    startTouch.current = { x: t.clientX, y: t.clientY };
+  }
+  function onTouchEnd(e: React.TouchEvent) {
+    const st = startTouch.current;
+    if (!st) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - st.x;
+    const dy = t.clientY - st.y;
+    const THRESHOLD = 50; // px
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > THRESHOLD) {
+      if (dx < 0) setCurrent(addMonth(current, 1));    // ← swipe izquierda: siguiente mes
+      else        setCurrent(addMonth(current, -1));   // → swipe derecha: mes anterior
+    }
+    startTouch.current = null;
+  }
+
   async function load() {
     const first = new Date(current.getFullYear(), current.getMonth(), 1);
     const last = new Date(current.getFullYear(), current.getMonth() + 1, 0);
@@ -533,13 +553,16 @@ export default function MonthCalendar() {
         </div>
       </div>
 
-      <div className="px-4 pb-2 pt-3">
-        <div className="grid grid-cols-7 gap-2 px-2 text-center text-sm text-gray-300">
-          {["Mo","Di","Mi","Do","Fr","Sa","So"].map((d) => (<div key={d} className="py-2">{d}</div>))}
+      {/* Contenedor con gesto táctil (no rompe el scroll) */}
+      <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} style={{ touchAction: "pan-y" }}>
+        <div className="px-4 pb-2 pt-3">
+          <div className="grid grid-cols-7 gap-2 px-2 text-center text-sm text-gray-300">
+            {["Mo","Di","Mi","Do","Fr","Sa","So"].map((d) => (<div key={d} className="py-2">{d}</div>))}
+          </div>
         </div>
-      </div>
 
-      <DaysGrid />
+        <DaysGrid />
+      </div>
 
       <div className="mt-4 px-4">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-gray-300">
