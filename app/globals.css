@@ -13,17 +13,22 @@ html, body {
   min-height: 100%;
 }
 
-/* ✅ Solo cuando se abre desde el icono (modo standalone) */
+/* Solo cuando se abre desde el icono (modo standalone) ajustamos la safe-area */
 @media (display-mode: standalone) {
-  @supports (padding: env(safe-area-inset-top)) {
-    html, body { padding-top: calc(env(safe-area-inset-top) + 32px) !important; }
-  }
-  /* Compatibilidad con iOS antiguos */
-  @supports (padding: constant(safe-area-inset-top)) {
-    html, body { padding-top: calc(constant(safe-area-inset-top) + 32px) !important; }
+  body.safe-area {
+    /* reduce ligeramente el hueco superior sin romper la notch */
+    padding-top: calc(max(env(safe-area-inset-top) - 8px, 0px));
   }
 }
 
+/* Compatibilidad con iOS antiguos (Safari antiguas) */
+@supports (padding: constant(safe-area-inset-top)) {
+  @media (display-mode: standalone) {
+    body.safe-area {
+      padding-top: calc(max(constant(safe-area-inset-top) - 8px, 0px));
+    }
+  }
+}
 
 /* Tu contenedor tal cual */
 .container { @apply mx-auto w-full max-w-6xl px-4; }
