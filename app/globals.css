@@ -6,18 +6,22 @@
 
 /* Fondo y altura coherentes con la barra de estado de iOS */
 html, body {
-  /* Tus clases siguen aplicando; reforzamos el color exacto del status bar */
+  /* Tus utilidades siguen aplicando */
   @apply bg-neutral-950 text-gray-100;
-  background-color: #0b0f12;  /* mismo que themeColor del layout */
+  /* Igualamos exactamente el color de la status bar */
+  background-color: #0b0f12;
   min-height: 100%;
 }
 
-/* (Opcional, sin efecto por defecto)
-   Si alguna vista quedara tapada por la notch en modo app web,
-   puedes añadir la clase `safe-area` al <body> para activar el padding. */
-@supports (padding: env(safe-area-inset-top)) {
-  body.safe-area {
-    padding-top: env(safe-area-inset-top);
+/* ✅ Solo cuando se abre desde el icono (modo standalone) añadimos
+   el padding de la safe-area para que el título no quede tapado */
+@media (display-mode: standalone) {
+  @supports (padding: env(safe-area-inset-top)) {
+    body { padding-top: env(safe-area-inset-top); }
+  }
+  /* Compatibilidad con iOS antiguos */
+  @supports (padding: constant(safe-area-inset-top)) {
+    body { padding-top: constant(safe-area-inset-top); }
   }
 }
 
