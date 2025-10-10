@@ -9,7 +9,7 @@ html, body {
   /* Tus utilidades siguen aplicando */
   @apply bg-neutral-950 text-gray-100;
   /* Igualamos exactamente el color de la status bar */
-  background-color: #000000;
+  background-color: #0b0f12;
   min-height: 100%;
 }
 
