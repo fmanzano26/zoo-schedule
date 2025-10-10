@@ -13,17 +13,17 @@ html, body {
   min-height: 100%;
 }
 
-/* ✅ Solo cuando se abre desde el icono (modo standalone) añadimos
-   el padding de la safe-area + un margen fijo para que el título no quede pegado */
+/* ✅ Solo cuando se abre desde el icono (modo standalone) */
 @media (display-mode: standalone) {
   @supports (padding: env(safe-area-inset-top)) {
-    body { padding-top: calc(env(safe-area-inset-top) + 32px); }
+    html, body { padding-top: calc(env(safe-area-inset-top) + 32px) !important; }
   }
   /* Compatibilidad con iOS antiguos */
   @supports (padding: constant(safe-area-inset-top)) {
-    body { padding-top: calc(constant(safe-area-inset-top) + 32px); }
+    html, body { padding-top: calc(constant(safe-area-inset-top) + 32px) !important; }
   }
 }
+
 
 /* Tu contenedor tal cual */
 .container { @apply mx-auto w-full max-w-6xl px-4; }
