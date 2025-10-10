@@ -14,14 +14,14 @@ html, body {
 }
 
 /* ✅ Solo cuando se abre desde el icono (modo standalone) añadimos
-   el padding de la safe-area para que el título no quede tapado */
+   el padding de la safe-area + un margen fijo para que el título no quede pegado */
 @media (display-mode: standalone) {
   @supports (padding: env(safe-area-inset-top)) {
-    body { padding-top: env(safe-area-inset-top); }
+    body { padding-top: calc(env(safe-area-inset-top) + 16px); }
   }
   /* Compatibilidad con iOS antiguos */
   @supports (padding: constant(safe-area-inset-top)) {
-    body { padding-top: constant(safe-area-inset-top); }
+    body { padding-top: calc(constant(safe-area-inset-top) + 16px); }
   }
 }
 
